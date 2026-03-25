@@ -1,0 +1,55 @@
+.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+}
+
+.glass-panel {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.grain-overlay {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCencYuc72NydpO3ubQrK82xtIs-Bla5QmmLo1eiMvr5CG8jUz_ChqjRMIyGURb1lH4-s99ilVYG6McvwYYZA-okJEg691rFLENZh4yiLHyICKtMnvOB7dyl8-BAEzN1tIpm60N_f1F3hf9KwLbkCT5HP2zsNI5Ou6zKahuddJlpzmnJ44UT66hzSVkb5-rbiC2BUDBeZfn4JVq0vORH_eFq__qRZuyvhGKGE6GgmjN-6hj5t9nfxRfddQdjaK5Xs-zLeOiKC1rUSoj);
+    opacity: 0.03;
+    pointer-events: none;
+}
+
+.vignette {
+    background: radial-gradient(circle, transparent 40%, rgba(5, 5, 5, 0.8) 100%);
+    pointer-events: none;
+}
+
+/* Heavy cinematic overlay for hero readability */
+.hero-cinematic-overlay {
+    background: linear-gradient(to bottom, rgba(19, 19, 20, 0.6) 0%, rgba(19, 19, 20, 0.8) 40%, rgba(19, 19, 20, 0.95) 100%);
+}
+
+.text-glow-emerald {
+    text-shadow: 0 0 15px rgba(146, 221, 187, 0.4);
+}
+
+.border-glow-emerald {
+    box-shadow: 0 0 20px rgba(146, 221, 187, 0.1);
+}
+
+@keyframes pulse-emerald {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    } 50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}
+
+.animate-pulse-emerald {
+    animation: pulse-emerald 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Base resets for landing page scope to avoid impacting dashboard, though we used tailwind */

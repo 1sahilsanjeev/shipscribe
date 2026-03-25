@@ -1,0 +1,2 @@
+﻿src/pages/Posts.tsx(280,22): error TS2304: Cannot find name 'Copy'.
+src/pages/Summaries.tsx(33,10): error TS6133: 'renderMarkdown' is declared but its value is never read.

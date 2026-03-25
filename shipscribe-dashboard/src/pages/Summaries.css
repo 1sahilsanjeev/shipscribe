@@ -1,0 +1,70 @@
+/* Summaries.css */
+
+.summaries-page {
+  /* Inherits smooth animation from the wrapper class added in JSX */
+}
+
+/* Format Badges */
+.format-badge.format-short {
+  background-color: rgba(59, 130, 246, 0.15); /* Tailwind blue-500 / 15% */
+  color: #2563eb; /* Tailwind blue-600 */
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.format-badge.format-deep {
+  background-color: rgba(139, 92, 246, 0.15); /* Tailwind violet-500 / 15% */
+  color: #7c3aed; /* Tailwind violet-600 */
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.format-badge.format-standup {
+  background-color: rgba(16, 185, 129, 0.15); /* Tailwind emerald-500 / 15% */
+  color: #059669; /* Tailwind emerald-600 */
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.format-badge.format-weekly {
+  background-color: rgba(249, 115, 22, 0.15); /* Tailwind orange-500 / 15% */
+  color: #ea580c; /* Tailwind orange-600 */
+  border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+/* Markdown typography refinements inside summary content */
+.summary-content p {
+  margin-bottom: 0.75em;
+}
+
+.summary-content p:last-child {
+  margin-bottom: 0;
+}
+
+.summary-content ul, 
+.summary-content ol {
+  padding-left: 1.25em;
+  margin-bottom: 0.75em;
+}
+
+.summary-content li {
+  margin-bottom: 0.25em;
+  position: relative;
+}
+
+.summary-content strong {
+  color: #111827; /* Tailwind gray-900 / ink */
+  font-weight: 700;
+}
+
+/* Optional: custom bullet styles for markdown lists */
+.summary-content ul {
+  list-style-type: none;
+}
+
+.summary-content ul li::before {
+  content: '•';
+  color: #9ca3af; /* Tailwind gray-400 */
+  position: absolute;
+  left: -1em;
+  font-size: 1.2em;
+  line-height: 1;
+  top: 0.1em;
+}
