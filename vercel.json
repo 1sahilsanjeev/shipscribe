@@ -2,14 +2,25 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/index.ts",
+      "src": "shipscribe-dashboard/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "src/api/index.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "src/api/index.ts"
+    },
+    {
       "src": "/(.*)",
-      "dest": "src/index.ts"
+      "dest": "shipscribe-dashboard/$1"
     }
   ]
 }
