@@ -4,6 +4,10 @@
   "description": "Developer activity tracker MCP server",
   "main": "dist/index.js",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@10.30.3",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "api": "tsx watch src/api/index.ts",
