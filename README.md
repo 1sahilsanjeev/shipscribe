@@ -78,3 +78,5 @@ All tools are now **scoped to your user account**.
 
 **Generate a build-in-public post**:
 `get_summary(format: "post")`
+
+# shipscribe
