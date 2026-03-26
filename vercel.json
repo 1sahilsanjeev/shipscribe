@@ -15,6 +15,7 @@
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/src/api/index.ts" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/assets/(.*)", "destination": "/shipscribe-dashboard/assets/$1" },
+    { "source": "/((?!api/).*)", "destination": "/shipscribe-dashboard/index.html" }
   ]
 }
