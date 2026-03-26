@@ -20,3 +20,8 @@ out/
 .vercel
 .cache
 .turbo
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
