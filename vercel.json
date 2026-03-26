@@ -13,9 +13,9 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "src/api/index.ts" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/src/api/index.ts" },
+    { "source": "/assets/(.*)", "destination": "/shipscribe-dashboard/assets/$1" },
+    { "source": "/((?!api/).*)", "destination": "/shipscribe-dashboard/index.html" }
   ]
 }
