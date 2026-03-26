@@ -1,0 +1,2 @@
+src/components/ui/header-2.tsx(3,18): error TS6133: 'buttonVariants' is declared but its value is never read.
+src/components/ui/header-2.tsx(116,30): error TS6133: 'props' is declared but its value is never read.

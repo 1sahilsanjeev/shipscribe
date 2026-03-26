@@ -58,34 +58,11 @@ const Landing: React.FC = () => {
   ];
 
   const LogoItem = ({ icon, name }: { icon: React.ReactNode, name: string }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '24px',
-      padding: '0 24px',
-      color: 'rgba(255,255,255,0.35)',
-      whiteSpace: 'nowrap',
-      transition: 'color 0.2s',
-      cursor: 'default',
-      flexShrink: 0
-    }}
-    onMouseEnter={e => {
-      e.currentTarget.style.color = 'rgba(255,255,255,0.75)'
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.color = 'rgba(255,255,255,0.35)'
-    }}
-    >
-      <div style={{
-        width: '3px',
-        height: '3px', 
-        borderRadius: '50%',
-        background: 'rgba(255,255,255,0.15)',
-        flexShrink: 0
-      }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '16px', lineHeight: 1 }}>{icon}</span>
-        <span style={{ fontFamily: 'monospace', fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>{name}</span>
+    <div className="logo-item">
+      <div className="logo-dot" />
+      <div className="logo-icon-container">
+        <span className="logo-icon-span">{icon}</span>
+        <span className="logo-name-span">{name}</span>
       </div>
     </div>
   );

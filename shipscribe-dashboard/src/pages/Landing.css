@@ -53,3 +53,46 @@
 }
 
 /* Base resets for landing page scope to avoid impacting dashboard, though we used tailwind */
+
+.logo-item {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 0 24px;
+    color: rgba(255, 255, 255, 0.35);
+    white-space: nowrap;
+    transition: color 0.2s;
+    cursor: default;
+    flex-shrink: 0;
+}
+
+.logo-item:hover {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.logo-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+}
+
+.logo-icon-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-icon-span {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.logo-name-span {
+    font-family: monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+}
