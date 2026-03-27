@@ -38,9 +38,8 @@ export function getConfigPath(
   return paths[editor][os];
 }
 
-export function getOneCommandInstall(apiKey: string, editor?: string): string {
-  const base = `npx -y @smithery/cli install shipscribe-mcp --client ${editor || 'antigravity'}`;
-  return `${base}\n# When prompted, enter your API key:\n# ${apiKey || 'sk_live_xxxx'}`;
+export function getOneCommandInstall(apiKey: string): string {
+  return `npx -y github:1sahilsanjeev/shipscribe shipscribe-setup --key ${apiKey}`;
 }
 
 export function getConfigBlock(
@@ -50,7 +49,7 @@ export function getConfigBlock(
     mcpServers: {
       shipscribe: {
         command: "npx",
-        args: ["shipscribe-mcp"],
+        args: ["-y", "github:1sahilsanjeev/shipscribe", "shipscribe-mcp"],
         env: {
           SHIPSCRIBE_API_KEY: apiKey,
           SHIPSCRIBE_API_URL: "https://www.shipscribe.pro/api"
