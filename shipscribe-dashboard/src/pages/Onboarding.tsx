@@ -15,8 +15,7 @@ import {
   Zap,
   Copy,
   Check,
-  Info,
-  ExternalLink
+  Info
 } from 'lucide-react';
 import { detectOS, getConfigPath, getConfigBlock } from '../lib/utils';
 
