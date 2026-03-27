@@ -44,22 +44,16 @@ export function getOneCommandInstall(apiKey: string, editor?: string): string {
 }
 
 export function getConfigBlock(
-  apiKey: string,
-  os: 'windows' | 'mac' | 'linux',
-  editor: string
+  apiKey: string
 ): string {
-  // Windows needs double backslashes in paths
   return JSON.stringify({
     mcpServers: {
       shipscribe: {
-        command: "node",
-        args: os === 'windows' 
-          ? ["C:\\Users\\{username}\\shipscribe\\dist\\index.js"]
-          : ["/home/{username}/shipscribe/dist/index.js"],
+        command: "npx",
+        args: ["shipscribe-mcp"],
         env: {
           SHIPSCRIBE_API_KEY: apiKey,
-          SHIPSCRIBE_API_URL: "https://www.shipscribe.pro",
-          SHIPSCRIBE_EDITOR: editor || 'unknown'
+          SHIPSCRIBE_API_URL: "https://www.shipscribe.pro/api"
         }
       }
     }

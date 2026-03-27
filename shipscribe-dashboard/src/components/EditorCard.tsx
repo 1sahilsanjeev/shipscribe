@@ -54,7 +54,7 @@ const EditorCard: React.FC<EditorCardProps> = ({ editor, connection, apiKey }) =
     }
   }[editor];
 
-  const configBlock = getConfigBlock(apiKey, os, editor).replace(/{username}/g, username || '{username}');
+  const configBlock = getConfigBlock(apiKey);
 
   const handleCopyPath = () => {
     navigator.clipboard.writeText(editorInfo.path);
@@ -327,9 +327,7 @@ const EditorCard: React.FC<EditorCardProps> = ({ editor, connection, apiKey }) =
                   </div>
                   <div className="flex-1 pt-1">
                     <h5 className="font-bold text-ink-soft mb-2 text-base">Install Node.js 18+</h5>
-                    <p className="text-[14px] text-ink-muted leading-relaxed mb-3">
-                      Shipscribe uses Node.js to run the MCP server.
-                    </p>
+                      The Shipscribe MCP server runs locally on your machine and securely sends your activity data to your Shipscribe dashboard. Your code never leaves your computer. Requires Node.js.
                     <div className="flex items-center gap-3">
                       <div className="bg-paper-warm border border-border px-3 py-1.5 rounded-lg font-mono text-[12px] text-ink-soft">
                         node --version
