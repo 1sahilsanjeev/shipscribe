@@ -39,7 +39,7 @@ export function getConfigPath(
 }
 
 export function getOneCommandInstall(apiKey: string, editor?: string): string {
-  const base = `npx add-mcp https://mcp.shipscribe.dev/mcp -e SHIPSCRIBE_API_KEY=${apiKey || 'sk_live_xxxx'}`;
+  const base = `npx add-mcp https://mcp.shipscribe.pro/mcp -e SHIPSCRIBE_API_KEY=${apiKey || 'sk_live_xxxx'}`;
   return editor ? `${base} -a ${editor}` : base;
 }
 
@@ -58,7 +58,7 @@ export function getConfigBlock(
           : ["/home/{username}/shipscribe/dist/index.js"],
         env: {
           SHIPSCRIBE_API_KEY: apiKey,
-          SHIPSCRIBE_API_URL: "http://localhost:3001",
+          SHIPSCRIBE_API_URL: "https://www.shipscribe.pro",
           SHIPSCRIBE_EDITOR: editor || 'unknown'
         }
       }
