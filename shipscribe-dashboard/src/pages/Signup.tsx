@@ -64,19 +64,21 @@ const Signup: React.FC = () => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password: pwd,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
 
       if (error) throw error;
 
-      if (data.user) {
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          email: data.user.email,
-          api_key: `sk_live_${Math.random().toString(36).substring(2, 15)}`,
-          has_completed_onboarding: false
-        });
+      // Email confirmation required - user must verify email first
+      if (data.user && !data.session) {
+        toast.success('Check your email to confirm your account!');
+        setLoading(false);
+        return;
       }
 
+      // Auto-confirmed or session returned - go to onboarding
       toast.success('Account created! Welcome to Shipscribe.');
       navigate('/onboarding');
     } catch (error: any) {
@@ -95,8 +97,14 @@ const Signup: React.FC = () => {
     navigate('/login');
   };
 
-  const handleGoogleSignIn = () => {
-    toast.error('Google Sign-In is not configured yet.');
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) toast.error(error.message);
   };
 
   return (

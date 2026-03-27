@@ -20,6 +20,7 @@ import Analytics from './pages/Analytics';
 import Chat from './pages/Chat';
 import VoiceProjects from './pages/VoiceProjects';
 import Admin from './pages/Admin';
+import AuthCallback from './pages/auth/Callback';
 
 const App: React.FC = () => {
   return (
@@ -43,6 +44,7 @@ const App: React.FC = () => {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Protected Dashboard Routes */}
           <Route element={<ProtectedRoute />}>

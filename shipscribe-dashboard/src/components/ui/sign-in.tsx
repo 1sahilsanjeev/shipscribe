@@ -83,7 +83,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 name="rememberMe" 
                 className="peer appearance-none w-4 h-4 rounded border border-white/10 bg-white/5 checked:bg-blue-500 checked:border-blue-400 transition-all focus:ring-0 focus:ring-offset-0" 
               />
-              <svg className="absolute w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+              <svg className="absolute w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -107,7 +107,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
         <span className="px-4 text-[10px] font-label font-medium uppercase tracking-[0.2em] text-zinc-600 bg-zinc-950 absolute whitespace-nowrap">Or continue with</span>
       </div>
 
-      <button onClick={onGoogleSignIn} className="animate-element animate-delay-800 w-full flex items-center justify-center gap-3 border border-white/10 rounded-full py-3 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all font-label text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-lg">
+      <button type="button" onClick={onGoogleSignIn} className="animate-element animate-delay-800 w-full flex items-center justify-center gap-3 border border-white/10 rounded-full py-3 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all font-label text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-lg">
           <GoogleIcon />
           Continue with Google
       </button>

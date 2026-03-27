@@ -33,23 +33,29 @@ const Login: React.FC = () => {
         return;
       }
 
-      // Check profile exists and has api_key
-      const { data: profile, error: profileError } = await supabase
+      // Check profile and access status
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('id, api_key, has_completed_onboarding')
+        .select('id, api_key, has_completed_onboarding, access_status')
         .eq('id', data.user?.id)
         .single();
-        
-      if (profileError || !profile || !profile.api_key) {
-        console.warn('[login] Profile or API key missing:', profileError);
-        // Ghost account — sign out immediately
+
+      // Only block if explicitly on waitlist
+      if (profile?.access_status === 'waitlist') {
         await supabase.auth.signOut();
-        toast.error('Account configuration missing. Please contact support or use a different account.');
+        toast.error('You are on the waitlist. Check your email for an invite.');
+        setLoading(false);
+        return;
+      }
+
+      // Profile missing = new user, send to onboarding
+      if (!profile) {
+        navigate('/onboarding');
         return;
       }
 
       toast.success('Welcome back!');
-      
+
       if (profile.has_completed_onboarding) {
         navigate('/dashboard');
       } else {
@@ -71,8 +77,14 @@ const Login: React.FC = () => {
     navigate('/signup');
   };
 
-  const handleGoogleSignIn = () => {
-    toast.error('Google Sign-In is not configured yet.');
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) toast.error(error.message);
   };
 
   return (
