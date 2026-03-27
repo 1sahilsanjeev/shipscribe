@@ -14,9 +14,11 @@ export async function authenticate(req: AuthenticatedRequest, res: Response, nex
   const token = authHeader.split(' ')[1];
 
   try {
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    const user = data?.user;
 
     if (error || !user) {
+      console.warn(`[auth] Unauthorized token: ${error?.message || 'User not found'}`);
       return res.status(401).json({ error: 'Unauthorized: Invalid token or user not found' });
     }
 

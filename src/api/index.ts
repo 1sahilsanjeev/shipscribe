@@ -404,4 +404,4 @@ app.get('/api/stats', authenticate, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-app.listen(config.port, () => { console.log(`Shipscribe REST API running at http://localhost:${config.port}`); });
+app.listen(Number(config.port), '0.0.0.0', () => { console.log(`Shipscribe REST API running at http://localhost:${config.port}`); });
