@@ -1,8 +1,11 @@
 {
-  "name": "shipscribe",
+  "name": "shipscribe-mcp",
   "version": "1.0.0",
   "description": "Developer activity tracker MCP server",
   "main": "dist/index.js",
+  "bin": {
+    "shipscribe-setup": "dist/setup.js"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
