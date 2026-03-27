@@ -2,7 +2,7 @@ import axios from 'axios';
 import { supabase } from './supabase';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:3005',
+  baseURL: import.meta.env.VITE_API_URL || '',
 });
 
 // Request interceptor to inject Supabase session token
