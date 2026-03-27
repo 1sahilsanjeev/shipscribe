@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
-import { detectOS, getConfigPath, getConfigBlock, getOneCommandInstall } from '../lib/utils';
+import { detectOS, getConfigPath, getConfigBlock } from '../lib/utils';
 
 interface EditorCardProps {
   editor: 'antigravity' | 'cursor' | 'claude_code';
@@ -34,7 +34,6 @@ const EditorCard: React.FC<EditorCardProps> = ({ editor, connection, apiKey }) =
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'polling' | 'success' | 'failed'>('idle');
   const [os, setOs] = useState<'windows' | 'mac' | 'linux'>(detectOS());
   const [username, setUsername] = useState('');
-  const [setupMode, setSetupMode] = useState<'command' | 'manual'>('command');
 
   const editorInfo = {
     antigravity: {
@@ -174,54 +173,6 @@ const EditorCard: React.FC<EditorCardProps> = ({ editor, connection, apiKey }) =
         )}
 
         <div className="space-y-4">
-          {/* Setup Mode Tabs */}
-          <div className="flex bg-paper-warm p-1 rounded-xl border border-border">
-            <button
-              onClick={() => setSetupMode('command')}
-              className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                setupMode === 'command' 
-                  ? 'bg-white text-primary shadow-sm ring-1 ring-border' 
-                  : 'text-ink-muted hover:text-ink-soft'
-              }`}
-            >
-              One command
-            </button>
-            <button
-              onClick={() => setSetupMode('manual')}
-              className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                setupMode === 'manual' 
-                  ? 'bg-white text-primary shadow-sm ring-1 ring-border' 
-                  : 'text-ink-muted hover:text-ink-soft'
-              }`}
-            >
-              Manual config
-            </button>
-          </div>
-
-          {setupMode === 'command' ? (
-            <div>
-              <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-ink-muted mb-2">Run this in your terminal:</p>
-              <div className="bg-ink rounded-xl p-4 font-mono text-[11px] text-white/90 overflow-x-auto scrollbar-hide border border-white/5 relative group/command">
-                <pre className="leading-relaxed">
-                  {getOneCommandInstall(apiKey, editor)}
-                </pre>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(getOneCommandInstall(apiKey, editor));
-                    toast.success('Command copied!');
-                  }}
-                  className="absolute top-3 right-3 p-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-all opacity-0 group-hover/command:opacity-100"
-                  title="Copy command"
-                >
-                  <Copy size={14} />
-                </button>
-              </div>
-              <p className="mt-2 text-[10px] text-ink-muted flex items-center gap-1.5 px-1">
-                <Info size={12} /> This auto-configures {editorInfo.name} for you.
-              </p>
-            </div>
-          ) : (
-            <>
               <div>
                 <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-ink-muted mb-2">Config file path:</p>
                 <div className="flex items-center justify-between text-[11px] text-ink-muted bg-paper-warm rounded-lg px-3 py-2 border border-border group/path">
@@ -277,8 +228,7 @@ const EditorCard: React.FC<EditorCardProps> = ({ editor, connection, apiKey }) =
                   </button>
                 </div>
               </div>
-            </>
-          )}
+
         </div>
 
         <div className="grid grid-cols-2 gap-3 mt-6">

@@ -28,7 +28,6 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import EditorCard from '../components/EditorCard';
 import { useMCPStatus } from '../hooks/useMCPStatus';
-import { getOneCommandInstall } from '../lib/utils';
 import { authActions } from '../lib/api';
 
 interface IntegrationStatus {
@@ -214,59 +213,7 @@ const Integrations: React.FC = () => {
           </h3>
         </div>
 
-        {/* npx add-mcp Banner */}
-        <div className="bg-ink rounded-3xl p-8 border border-white/10 relative overflow-hidden group/mcp shadow-premium-lg">
-          <div className="absolute top-0 right-0 p-8 opacity-10 translate-x-4 -translate-y-4 group-hover/mcp:scale-110 transition-transform duration-700 pointer-events-none">
-            <Zap size={160} className="text-primary" />
-          </div>
-          
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 bg-primary/20 text-primary px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider mb-4 border border-primary/20">
-              New: Magic Install
-            </div>
-            <h3 className="text-white font-serif text-3xl mb-3">Easiest way to connect — <em>run one command:</em></h3>
-            <p className="text-white/60 text-[14px] font-medium mb-6 max-w-xl">
-              Tired of manual JSON config? Use our CLI tool to auto-detect your editors and configure Shipscribe in seconds.
-            </p>
-            
-            <div className="flex items-center gap-3 max-w-3xl">
-              <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 font-mono text-[14px] flex-1 flex items-center justify-between group-hover/mcp:border-white/20 transition-colors">
-                <span className="text-white/90 truncate">
-                  {getOneCommandInstall(apiKey)}
-                </span>
-                <button 
-                  onClick={() => handleCopy(getOneCommandInstall(apiKey), 'Command')}
-                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white"
-                  title="Copy command"
-                >
-                  <Copy size={18} />
-                </button>
-              </div>
-              <button 
-                onClick={() => handleCopy(getOneCommandInstall(apiKey), 'Command')}
-                className="bg-primary text-white px-8 py-4 rounded-2xl font-bold text-[14px] hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
-              >
-                Copy Command
-                <ArrowRight size={16} />
-              </button>
-            </div>
-            
-            <div className="mt-6 flex items-center gap-6">
-              <div className="flex items-center gap-2 text-[12px] text-white/40">
-                <CheckCircle2 size={14} className="text-success" />
-                <span>Auto-detects Antigravity, Cursor & Claude</span>
-              </div>
-              <div className="flex items-center gap-2 text-[12px] text-white/40">
-                <CheckCircle2 size={14} className="text-success" />
-                <span>No file searching required</span>
-              </div>
-              <div className="flex items-center gap-2 text-[12px] text-white/40">
-                <Info size={14} className="text-primary" />
-                <span>Requires Node.js 18+</span>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {(['antigravity', 'cursor', 'claude_code'] as const).map((id) => {
