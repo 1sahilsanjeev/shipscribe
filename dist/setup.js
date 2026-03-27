@@ -40,7 +40,7 @@ else {
 }
 const shipscribeConfig = {
     command: "npx",
-    args: ["-y", "shipscribe-mcp"],
+    args: ["-y", "github:1sahilsanjeev/shipscribe", "shipscribe-mcp"],
     env: {
         SHIPSCRIBE_API_KEY: apiKey,
         SHIPSCRIBE_API_URL: "https://www.shipscribe.pro/api"

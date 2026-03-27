@@ -4,7 +4,8 @@
   "description": "Developer activity tracker MCP server",
   "main": "dist/index.js",
   "bin": {
-    "shipscribe-setup": "dist/setup.js"
+    "shipscribe-setup": "dist/setup.js",
+    "shipscribe-mcp": "dist/index.js"
   },
   "type": "module",
   "engines": {
