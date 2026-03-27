@@ -15,10 +15,10 @@ import {
   Zap,
   Copy,
   Check,
-  Info
+  Info,
+  ExternalLink
 } from 'lucide-react';
-import { detectOS, getConfigPath, getConfigBlock, getOneCommandInstall } from '../lib/utils';
-import { ExternalLink } from 'lucide-react';
+import { detectOS, getConfigPath, getConfigBlock } from '../lib/utils';
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
@@ -28,8 +28,6 @@ const Onboarding: React.FC = () => {
   const [os, setOs] = useState<'windows' | 'mac' | 'linux'>(detectOS());
   const [username, setUsername] = useState('');
   const [copied, setCopied] = useState(false);
-  const [setupMode, setSetupMode] = useState<'command' | 'manual'>('command');
-  const [showNodeCheck, setShowNodeCheck] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -119,85 +117,7 @@ const Onboarding: React.FC = () => {
               <h1 className="text-3xl font-bold text-ink mb-4 font-serif">Connect Your Tools</h1>
               <p className="text-ink-soft mb-8 italic text-sm">Your API Key: <code className="bg-accent-light px-2 py-1 rounded text-primary font-mono">{apiKey || 'Loading...'}</code></p>
               
-              <div className="flex bg-paper-warm p-1 rounded-xl border border-border mb-8 max-w-xs mx-auto">
-                <button
-                  onClick={() => setSetupMode('command')}
-                  className={`flex-1 py-2 rounded-lg text-[11px] font-bold uppercase transition-all ${
-                    setupMode === 'command' ? 'bg-white text-primary shadow-sm' : 'text-ink-muted'
-                  }`}
-                >
-                  Quick Setup
-                </button>
-                <button
-                  onClick={() => setSetupMode('manual')}
-                  className={`flex-1 py-2 rounded-lg text-[11px] font-bold uppercase transition-all ${
-                    setupMode === 'manual' ? 'bg-white text-primary shadow-sm' : 'text-ink-muted'
-                  }`}
-                >
-                  Manual config
-                </button>
-              </div>
-
-              {setupMode === 'command' ? (
-                <div className="text-left space-y-6 mb-12">
-                   <div className="bg-white border border-border rounded-3xl p-8 shadow-premium relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 p-6 opacity-5 -translate-y-4 translate-x-4">
-                        <Terminal size={120} />
-                      </div>
-                      
-                      <div className="relative z-10">
-                        <h3 className="text-lg font-bold text-ink mb-2">PRIMARY METHOD — One command (recommended)</h3>
-                        <p className="text-ink-muted text-[13px] mb-6 font-medium">Run this in your terminal to auto-detect your editor and configure everything for you.</p>
-                        
-                        <div className="bg-ink rounded-2xl p-6 font-mono text-[13px] text-white/90 relative group/cmd mb-6 border border-white/5 shadow-2xl">
-                          <pre className="leading-relaxed whitespace-pre-wrap">
-                            {getOneCommandInstall(apiKey)}
-                          </pre>
-                          <button 
-                            onClick={() => {
-                              navigator.clipboard.writeText(getOneCommandInstall(apiKey));
-                              toast.success('Command copied!');
-                            }}
-                            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-all opacity-0 group-hover/cmd:opacity-100"
-                          >
-                            <Copy size={16} />
-                          </button>
-                        </div>
-
-                        <div className="space-y-4">
-                           <div className="flex items-center gap-3 text-ink-soft text-[12px] font-bold p-4 bg-paper rounded-2xl border border-border">
-                             <Info size={16} className="text-primary flex-shrink-0" />
-                             <span>Requires <strong>Node.js 18+</strong> to be installed first.</span>
-                           </div>
-                           
-                           <div className="flex items-center gap-4 ml-1">
-                             <button 
-                               onClick={() => setShowNodeCheck(!showNodeCheck)}
-                               className="text-primary text-[12px] font-bold hover:underline flex items-center gap-1.5"
-                             >
-                               {showNodeCheck ? 'Hide instructions' : 'How to check Node.js?'}
-                             </button>
-                             <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-ink-muted text-[12px] font-bold hover:text-ink flex items-center gap-1.5 border-l border-border pl-4">
-                               Download Node.js <ExternalLink size={14} />
-                             </a>
-                           </div>
-
-                           {showNodeCheck && (
-                             <div className="bg-paper-warm border border-border rounded-2xl p-4 animate-in slide-in-from-top-2 duration-300">
-                               <p className="text-[12px] text-ink-muted mb-2 font-bold uppercase tracking-wider">Run this in your terminal:</p>
-                               <div className="bg-white border border-border rounded-xl px-3 py-2 font-mono text-[12px] text-ink mb-2">
-                                 node --version
-                               </div>
-                               <p className="text-[11px] text-ink-muted italic">Expected output: <code className="text-ink font-bold">v18.0.0</code> or higher</p>
-                             </div>
-                           )}
-                        </div>
-                      </div>
-                   </div>
-                </div>
-              ) : (
-                <div className="animate-in fade-in zoom-in-95 duration-500">
-                  {/* OS Selector moved inside manual state if user prefers manual */}
+              <div className="animate-in fade-in zoom-in-95 duration-500">
                   <div className="flex bg-paper-warm p-1 rounded-xl border border-border mb-8 max-w-xs mx-auto">
                     {(['windows', 'mac', 'linux'] as const).map((o) => (
                       <button
@@ -255,7 +175,7 @@ const Onboarding: React.FC = () => {
                                <Zap size={14} /> Antigravity Quickest Way:
                              </p>
                              <p className="text-[12px] text-ink-soft leading-relaxed">
-                               Click <strong>...</strong> → <strong>MCP Servers</strong> → <strong>Manage MCP Servers</strong> → <strong>View raw config</strong>
+                                Click <strong>...</strong> → <strong>MCP Servers</strong> → <strong>Manage MCP Servers</strong> → <strong>View raw config</strong>
                              </p>
                            </div>
                            <p className="text-[11px] text-ink-muted flex items-center gap-1.5 px-1">
@@ -277,14 +197,15 @@ const Onboarding: React.FC = () => {
                       </h3>
                       <div className="bg-zinc-900 rounded-2xl p-6 font-mono text-[12px] text-zinc-300 relative group overflow-hidden">
                         <pre className="scrollbar-hide overflow-x-auto leading-relaxed">
-                          {getConfigBlock(apiKey, os, 'antigravity').replace(/{username}/g, username || '{username}')}
+                          {getConfigBlock(apiKey)}
                         </pre>
                         <button 
                           onClick={() => {
-                            navigator.clipboard.writeText(getConfigBlock(apiKey, os, 'antigravity').replace(/{username}/g, username || '{username}'));
+                            navigator.clipboard.writeText(getConfigBlock(apiKey));
                             toast.success('Config copied!');
                           }}
-                          className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-all opacity-0 group-hover:opacity-100"
+                          className="absolute top-3 right-3 p-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100"
+                          title="Copy config"
                         >
                           <Copy size={16} />
                         </button>
@@ -292,7 +213,6 @@ const Onboarding: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              )}
 
               <div className="flex gap-4">
                 <button onClick={() => setStep(1)} className="flex-1 h-14 bg-paper hover:bg-white text-ink-soft font-bold rounded-2xl">Back</button>
