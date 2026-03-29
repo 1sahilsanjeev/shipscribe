@@ -9,12 +9,17 @@
       }
     },
     {
-      "src": "api/health.js",
+      "src": "api/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/health.ts",
       "use": "@vercel/node"
     }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/health.js" },
+    { "source": "/api/health", "destination": "/api/health.ts" },
+    { "source": "/api/(.*)", "destination": "/api/index.ts" },
     { "source": "/((?!api/)[^.]*)", "destination": "/shipscribe-dashboard/index.html" },
     { "source": "/(.*)", "destination": "/shipscribe-dashboard/$1" }
   ]
