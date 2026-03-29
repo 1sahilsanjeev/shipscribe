@@ -10,13 +10,13 @@ export async function authenticate(req: AuthenticatedRequest, res: Response, nex
     const authHeader = req.headers.authorization;
     const apiKeyHeader = req.headers['x-api-key'];
 
-    if ((!authHeader || !authHeader.startsWith('Bearer ')) && !apiKeyHeader) {
-      return res.status(401).json({ error: 'Unauthorized: No authorization token or API key provided' });
-    }
-
     if (!supabaseAdmin) {
       console.error('[auth] Supabase admin client not initialized. Check your environment variables.');
       return res.status(503).json({ error: 'Authentication service unavailable' });
+    }
+
+    if ((!authHeader || !authHeader.startsWith('Bearer ')) && !apiKeyHeader) {
+      return res.status(401).json({ error: 'Unauthorized: No authorization token or API key provided' });
     }
 
     let user: any = null;
@@ -34,7 +34,6 @@ export async function authenticate(req: AuthenticatedRequest, res: Response, nex
         return res.status(401).json({ error: 'Unauthorized: Invalid API Key' });
       }
       
-      // Construct user object to match JWT format
       user = { id: profile.id, email: profile.email };
 
     } else if (authHeader) {
@@ -58,28 +57,16 @@ export async function authenticate(req: AuthenticatedRequest, res: Response, nex
       return res.status(401).json({ error: 'Unauthorized: User not found' });
     }
 
-    // Fetch profile data to attach extra fields if needed
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    // Check if user is admin - ensure user and email exist
-    let isAdmin = false;
-    if (user?.email) {
-      const { data: adminData } = await supabaseAdmin
-        .from('admin_users')
-        .select('id')
-        .eq('email', user.email)
-        .maybeSingle();
-      isAdmin = !!adminData;
-    }
+    // Fetch profile and check admin in parallel for better performance
+    const [{ data: profile }, { data: adminData }] = await Promise.all([
+      supabaseAdmin.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+      supabaseAdmin.from('admin_users').select('id').eq('email', user.email || '').maybeSingle()
+    ]);
 
     req.user = { 
       ...user,
       profile: profile || {},
-      isAdmin
+      isAdmin: !!adminData
     };
     
     next();

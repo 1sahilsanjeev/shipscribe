@@ -1,38 +1,66 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
 
-const supabaseUrl = config.supabaseUrl || process.env.SUPABASE_URL;
-const supabaseAnonKey = config.supabaseAnonKey || process.env.SUPABASE_ANON_KEY;
-const supabaseServiceKey = config.supabaseServiceKey || process.env.SUPABASE_SERVICE_KEY;
+let supabaseClient: SupabaseClient | null = null;
+let supabaseAdminClient: SupabaseClient | null = null;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('[supabase] FATAL: SUPABASE_URL or SUPABASE_SERVICE_KEY not set');
+export function getSupabase(): SupabaseClient | null {
+  if (supabaseClient) return supabaseClient;
+
+  const supabaseUrl = config.supabaseUrl || process.env.SUPABASE_URL;
+  const supabaseAnonKey = config.supabaseAnonKey || process.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('[supabase] ✗ Missing SUPABASE_URL or ANON_KEY');
+    return null;
+  }
+
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { autoRefreshToken: true, persistSession: false }
+  });
+  
+  console.log('[supabase] ✓ Client initialized');
+  return supabaseClient;
 }
 
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        auth: {
-          autoRefreshToken: true,
-          persistSession: false
-        }
-      }
-    )
-  : null as unknown as ReturnType<typeof createClient>;
+export function getSupabaseAdmin(): SupabaseClient | null {
+  if (supabaseAdminClient) return supabaseAdminClient;
 
-export const supabaseAdmin = supabaseUrl && supabaseServiceKey 
-  ? createClient(
-      supabaseUrl,
-      supabaseServiceKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-  : null as unknown as ReturnType<typeof createClient>;
+  const supabaseUrl = config.supabaseUrl || process.env.SUPABASE_URL;
+  const supabaseServiceKey = config.supabaseServiceKey || process.env.SUPABASE_SERVICE_KEY;
 
-console.log('[supabase] Clients checked/initialized');
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('[supabase] ✗ Missing SUPABASE_URL or SERVICE_KEY');
+    return null;
+  }
+
+  supabaseAdminClient = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+
+  console.log('[supabase] ✓ Admin client initialized');
+  return supabaseAdminClient;
+}
+
+/**
+ * PROXY EXPORTS: These allow us to keep the same variable names in all files
+ * while ensuring the client is only initialized lazily on the first ACTUAL property access.
+ * This prevents module-level hangups during Vercel cold starts.
+ */
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(target, prop, receiver) {
+    const client = getSupabase();
+    if (!client) throw new Error('Supabase client not initialized - missing keys');
+    const value = (client as any)[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  }
+});
+
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(target, prop, receiver) {
+    const client = getSupabaseAdmin();
+    if (!client) throw new Error('Supabase admin client not initialized - missing keys');
+    const value = (client as any)[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  }
+});

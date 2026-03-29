@@ -21,7 +21,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import { rateLimit } from 'express-rate-limit';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { supabaseAdmin, supabase } from '../lib/supabase.js';
 import { generateSummary, generatePostVariants } from '../lib/anthropic.js';
 import { syncGitHub } from '../tools/github.js';
 import { syncClaudeCode } from '../tools/claudecode.js';
