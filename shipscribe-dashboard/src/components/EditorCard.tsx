@@ -53,7 +53,8 @@ const EditorCard: React.FC<EditorCardProps> = ({ editor, connection, apiKey }) =
     }
   }[editor];
 
-  const configBlock = getConfigBlock(apiKey);
+  const apiUrl = 'https://www.shipscribe.pro/api';
+  const configBlock = getConfigBlock(apiKey, apiUrl);
 
   const handleCopyPath = () => {
     navigator.clipboard.writeText(editorInfo.path);
@@ -77,7 +78,7 @@ const EditorCard: React.FC<EditorCardProps> = ({ editor, connection, apiKey }) =
     
     const poll = async () => {
       try {
-        const res = await api.get('/api/auth/mcp-status');
+        const res = await api.get('/auth/mcp-status');
         const isNowConnected = res.data.connections?.some((c: any) => c.editor === editor && c.connected);
         
         if (isNowConnected) {

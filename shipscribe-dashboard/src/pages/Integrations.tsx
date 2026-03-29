@@ -21,7 +21,8 @@ import {
   X,
   ArrowRight,
   Info,
-  Layers
+  Layers,
+  Cpu
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -204,7 +205,71 @@ const Integrations: React.FC = () => {
         </div>
       </section>
 
-      {/* SECTION 2: Editor Connections */}
+      {/* SECTION 2: CLI Setup */}
+      <section className="bg-paper border border-border rounded-2xl p-8 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-8 opacity-5 -translate-x-4 translate-y-4 group-hover:-translate-x-2 group-hover:translate-y-2 transition-transform duration-700">
+          <Terminal size={100} strokeWidth={1} />
+        </div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center">
+              <Zap size={18} fill="currentColor" />
+            </div>
+            <h3 className="text-xl font-bold text-ink">One-Command CLI Setup</h3>
+            <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-bold uppercase tracking-wider border border-success/10">Quickest</span>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div>
+              <p className="text-[14px] text-ink-soft font-medium mb-6 leading-relaxed">
+                Run this command in your terminal to automatically configure Shipscribe MCP for <strong>Antigravity</strong>, <strong>Cursor</strong>, <strong>Windsurf</strong>, and <strong>Claude Desktop</strong>.
+              </p>
+              
+              <div className="bg-ink rounded-xl p-5 font-mono text-[13px] text-white/90 border border-white/5 relative group/cli mb-4 shadow-xl">
+                <code className="break-all leading-relaxed whitespace-pre-wrap">
+                  npx -y shipscribe-setup --key {apiKey} --url https://www.shipscribe.pro/api
+                </code>
+                <button 
+                  onClick={() => handleCopy(`npx -y shipscribe-setup --key ${apiKey} --url https://www.shipscribe.pro/api`, 'CLI command')}
+                  className="absolute top-4 right-4 p-2.5 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-all active:scale-95"
+                  title="Copy command"
+                >
+                  <Copy size={16} />
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-4 text-[11px] text-ink-muted">
+                <span className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-success" /> No install needed</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-success" /> Auto-detects editors</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-success" /> Secure & local</span>
+              </div>
+            </div>
+            
+            <div className="bg-paper-warm/50 rounded-2xl p-6 border border-border">
+              <h4 className="text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-4">Supported Editors:</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { name: 'Antigravity', icon: <Zap size={14} className="text-[#00C2FF]" /> },
+                  { name: 'Cursor', icon: <Search size={14} className="text-[#3E7EFF]" /> },
+                  { name: 'Windsurf', icon: <Layers size={14} className="text-[#9B7C72]" /> },
+                  { name: 'Claude Desktop', icon: <Cpu size={14} className="text-[#D97757]" /> }
+                ].map((editor) => (
+                  <div key={editor.name} className="flex items-center gap-2.5 bg-white border border-border px-3 py-2 rounded-xl text-xs font-bold text-ink-soft">
+                    {editor.icon}
+                    {editor.name}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-[11px] text-ink-muted italic leading-relaxed">
+                The setup script will update your local configuration files to include the Shipscribe MCP server. Requires Node.js 18+.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3: Editor Connections */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest text-ink-muted flex items-center gap-2">
