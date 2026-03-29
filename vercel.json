@@ -20,7 +20,8 @@
   "rewrites": [
     { "source": "/api/health", "destination": "/api/health.ts" },
     { "source": "/api/(.*)", "destination": "/api/index.ts" },
-    { "source": "/((?!api/)[^.]*)", "destination": "/shipscribe-dashboard/index.html" },
-    { "source": "/(.*)", "destination": "/shipscribe-dashboard/$1" }
+    { "source": "/assets/(.*)", "destination": "/shipscribe-dashboard/assets/$1" },
+    { "source": "/", "destination": "/shipscribe-dashboard/index.html" },
+    { "source": "/((?!api/|assets/).*)", "destination": "/shipscribe-dashboard/index.html" }
   ]
 }
