@@ -1,15 +1,3 @@
-import express from 'express';
-
-const app = express();
-
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    source: 'test_simple',
-    timestamp: new Date().toISOString() 
-  });
-});
-
-export default (req: any, res: any) => {
-  return app(req, res);
-};
+export default function handler(req: any, res: any) {
+  res.status(200).json({ status: 'ok', msg: 'Raw handler works' });
+}
