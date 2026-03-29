@@ -9,12 +9,12 @@
       }
     },
     {
-      "src": "src/api/test_simple.ts",
+      "src": "api/health.js",
       "use": "@vercel/node"
     }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/src/api/test_simple.ts" },
+    { "source": "/api/(.*)", "destination": "/api/health.js" },
     { "source": "/((?!api/)[^.]*)", "destination": "/shipscribe-dashboard/index.html" },
     { "source": "/(.*)", "destination": "/shipscribe-dashboard/$1" }
   ]
