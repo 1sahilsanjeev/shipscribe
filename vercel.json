@@ -9,12 +9,12 @@
       }
     },
     {
-      "src": "src/api/index.ts",
+      "src": "src/api/test_simple.ts",
       "use": "@vercel/node"
     }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/src/api/index.ts" },
+    { "source": "/api/(.*)", "destination": "/src/api/test_simple.ts" },
     { "source": "/((?!api/)[^.]*)", "destination": "/shipscribe-dashboard/index.html" },
     { "source": "/(.*)", "destination": "/shipscribe-dashboard/$1" }
   ]
