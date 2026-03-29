@@ -21,7 +21,7 @@
     "api:dev": "tsx watch src/api/index.ts",
     "dashboard:dev": "npm run dev --prefix shipscribe-dashboard",
     "dev:all": "concurrently --names \"API,DASHBOARD\" --prefix-colors \"blue,green\" \"npm run api:dev\" \"npm run dashboard:dev\"",
-    "build": "tsc && cd shipscribe-dashboard && npm install --legacy-peer-deps && npm run build",
+    "build": "tsc && cd shipscribe-dashboard && npm install --legacy-peer-deps && npm run build && cd .. && mkdir -p public && cp -r shipscribe-dashboard/dist/* public/",
     "start": "node dist/index.js"
   },
   "dependencies": {
