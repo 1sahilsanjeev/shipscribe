@@ -53,8 +53,7 @@ const EditorCard: React.FC<EditorCardProps> = ({ editor, connection, apiKey }) =
     }
   }[editor];
 
-  const apiUrl = 'https://www.shipscribe.pro/api';
-  const configBlock = getConfigBlock(apiKey, apiUrl);
+  const configBlock = getConfigBlock(apiKey);
 
   const handleCopyPath = () => {
     navigator.clipboard.writeText(editorInfo.path);
