@@ -82,11 +82,13 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    env: {
-      supabase: !!process.env.SUPABASE_URL,
-      service_key: !!process.env.SUPABASE_SERVICE_KEY,
-      anthropic: !!process.env.ANTHROPIC_API_KEY,
-      node_env: process.env.NODE_ENV
+    source: 'express_app',
+    env_diagnostics: {
+      supabase_url: process.env.SUPABASE_URL ? 'PRESENT' : 'MISSING',
+      supabase_service_key: process.env.SUPABASE_SERVICE_KEY ? 'PRESENT' : 'MISSING',
+      supabase_anon_key: process.env.SUPABASE_ANON_KEY ? 'PRESENT' : 'MISSING',
+      anthropic_key: process.env.ANTHROPIC_API_KEY ? 'PRESENT' : 'MISSING',
+      jwt_secret: process.env.JWT_SECRET ? 'PRESENT' : 'MISSING'
     }
   });
 });
