@@ -1,34 +1,35 @@
-import { performGithubSync } from '../tools/github.js';
-import { heartbeat } from '../lib/timeTracker.js';
+// Proxied through fetch
 
 let pollInterval: NodeJS.Timeout | null = null;
 let lastCheck: Date | null = null;
 
-export function startGithubPoller(userId: string) {
+export function startGithubPoller(apiKey: string, apiUrl: string) {
   const intervalSeconds = Math.max(30, parseInt(process.env.GITHUB_POLL_INTERVAL || '60'));
   const intervalMs = intervalSeconds * 1000;
 
   console.error(`[shipscribe] GitHub poller started — checking every ${intervalSeconds}s`);
 
   // Initial sync
-  runSync(userId);
+  runSync(apiKey, apiUrl);
 
   pollInterval = setInterval(() => {
-    runSync(userId);
+    runSync(apiKey, apiUrl);
   }, intervalMs);
 }
 
-async function runSync(userId: string) {
+async function runSync(apiKey: string, apiUrl: string) {
   try {
-    const result = await performGithubSync(userId);
-    lastCheck = new Date();
+    const res = await fetch(`${apiUrl}/mcp/invoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify({ name: 'sync_github', args: {} })
+    });
     
-    if (result.synced > 0) {
-      // Basic heartbeat for GitHub activity
-      heartbeat(userId, 'github-sync', 'github'); 
-      console.error(`[shipscribe] GitHub: ${result.synced} new events synced`);
+    if (res.ok) {
+      lastCheck = new Date();
+      // The backend handles the heartbeat and logging directly for syncs now, or we can just ignore it over here.
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error(`[shipscribe] GitHub Poller Error:`, e);
   }
 }

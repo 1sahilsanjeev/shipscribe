@@ -18,8 +18,14 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized if needed, though supabase listener in AuthContext might handle it better
+    // ERR_NETWORK = server is offline (connection refused). 
+    // The ServerOfflineBanner handles UX — don't flood the console.
+    const isOffline = error.code === 'ERR_NETWORK' || error.message === 'Network Error';
+    if (!isOffline) {
+      // Only log truly unexpected errors
+      if (error.response?.status !== 401 && error.response?.status !== 404) {
+        console.error('[API]', error.response?.status, error.config?.url, error.message);
+      }
     }
     return Promise.reject(error);
   }

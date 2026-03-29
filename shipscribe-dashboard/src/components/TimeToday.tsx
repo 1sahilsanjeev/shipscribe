@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../lib/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useServerStatus } from '../context/ServerStatusContext';
 
 // Type casts for Recharts components to resolve React 18 type mismatches
 const RechartsBarChart = BarChart as any;
@@ -9,30 +10,50 @@ const RechartsXAxis = XAxis as any;
 const RechartsYAxis = YAxis as any;
 const RechartsTooltip = Tooltip as any;
 
+// Backoff: 5m, 10m, 20m (max) — this data changes slowly
+const getBackoffMs = (failCount: number) => Math.min(20 * 60_000, 5 * 60_000 * Math.pow(2, failCount - 1));
+
 const TimeToday: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { serverOnline } = useServerStatus();
+  const failCountRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!serverOnline) return;
     try {
       const response = await api.get('/api/activity/live');
+      failCountRef.current = 0;
       const chartData = response.data.time_today.by_project.map((p: any) => ({
         name: p.project,
         hours: p.hours,
       }));
       setData(chartData);
-    } catch (error) {
-      console.error('Error fetching time data:', error);
+    } catch (error: any) {
+      if (error.code !== 'ERR_NETWORK') {
+        console.error('Error fetching time data:', error.message);
+      }
+      failCountRef.current += 1;
     } finally {
       setLoading(false);
     }
-  };
+  }, [serverOnline]);
 
   useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!serverOnline) return;
+
     fetchData();
-    const interval = setInterval(fetchData, 300000); // 5 mins
-    return () => clearInterval(interval);
-  }, []);
+
+    const schedule = () => {
+      const delay = failCountRef.current === 0 ? 300_000 : getBackoffMs(failCountRef.current);
+      timerRef.current = setTimeout(async () => { await fetchData(); schedule(); }, delay);
+    };
+    schedule();
+
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [fetchData, serverOnline]);
 
   const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 

@@ -38,7 +38,7 @@ const EmptyState: React.FC = () => {
         <div className="max-w-md mx-auto space-y-3">
           <h2 className="text-4xl font-serif italic text-ink tracking-tight">Data is <em>simmering</em></h2>
           <p className="text-ink-soft text-[15px] font-medium leading-relaxed">
-            Your personal engineering engine is collecting data. Detailed insights will unlock after <span className="text-primary font-bold">3 days</span> of baseline activity.
+            Your personal engineering engine is collecting data. Detailed insights will unlock as soon as your <span className="text-primary font-bold">first activity</span> is registered.
           </p>
         </div>
 

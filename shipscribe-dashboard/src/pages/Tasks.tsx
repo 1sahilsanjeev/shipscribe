@@ -211,7 +211,7 @@ const Tasks: React.FC = () => {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/api/tasks');
+      const res = await api.get('/tasks');
       setTasks(res.data || []);
     } catch {
       toast.error('Failed to load tasks');

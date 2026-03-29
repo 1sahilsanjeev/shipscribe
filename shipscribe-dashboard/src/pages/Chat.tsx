@@ -12,12 +12,15 @@ import {
   ChevronDown,
   Share2
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+  variants?: string[]
+  activeVariant?: number
 }
 
 export default function Chat() {
@@ -42,9 +45,9 @@ export default function Chat() {
 
   useEffect(() => {
     // Fetch active context
-    api.get('/api/voice/active').then(res => setActiveVoice(res.data)).catch(() => {})
-    api.get('/api/projects/primary').then(res => setPrimaryProject(res.data)).catch(() => {})
-    api.get('/api/projects').then(res => setProjects(res.data || [])).catch(() => {})
+    api.get('/voice/active').then(res => setActiveVoice(res.data)).catch(() => {})
+    api.get('/projects/primary').then(res => setPrimaryProject(res.data)).catch(() => {})
+    api.get('/projects').then(res => setProjects(res.data || [])).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -55,8 +58,10 @@ export default function Chat() {
     message: string
     model: string
     isThinkingEnabled: boolean
-  }) {
+  }, customHistory?: Message[]) {
     if (!data.message.trim()) return
+
+    const currentHistory = customHistory || messages
 
     const userMessage: Message = {
       id: Math.random().toString(36).slice(2),
@@ -71,7 +76,7 @@ export default function Chat() {
     try {
       const res = await api.post('/api/chat', {
         message: data.message,
-        history: messages.slice(-10).map((m) => ({
+        history: currentHistory.slice(-10).map((m) => ({
           role: m.role,
           content: m.content,
         })),
@@ -109,6 +114,98 @@ export default function Chat() {
     'How productive was I this week?',
     'What tasks are still pending?',
   ]
+
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content)
+    toast.success('Copied to clipboard!')
+  }
+
+  const handleFeedback = (isPositive: boolean) => {
+    toast.success(isPositive ? 'Thanks for the feedback!' : 'Feedback recorded, we will improve.')
+  }
+
+  const handleRetry = async (messageId: string) => {
+    const index = messages.findIndex(m => m.id === messageId)
+    if (index === -1) return
+
+    if (messages[index].role === 'assistant') {
+      const userMessageIndex = index - 1
+      if (userMessageIndex < 0 || messages[userMessageIndex].role !== 'user') return
+      
+      const userMessageContent = messages[userMessageIndex].content
+      const historyBefore = messages.slice(0, userMessageIndex)
+      
+      setLoading(true)
+      try {
+        const res = await api.post('/api/chat', {
+          message: userMessageContent,
+          history: historyBefore.slice(-10).map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          projectId: selectedProjectId
+        })
+        const newReply = res.data.reply
+        
+        setMessages(prev => {
+          const next = [...prev]
+          const msg = { ...next[index] }
+          const variants = msg.variants || [msg.content]
+          variants.push(newReply)
+          msg.variants = variants
+          msg.content = newReply
+          msg.activeVariant = variants.length - 1
+          next[index] = msg
+          return next
+        })
+      } catch (err) {
+        toast.error('Failed to regenerate response.')
+      } finally {
+        setLoading(false)
+      }
+    } else {
+      const userMessageIndex = index
+      const userMessageContent = messages[userMessageIndex].content
+      const historyToKeep = messages.slice(0, userMessageIndex)
+
+      setMessages(historyToKeep)
+      handleSendMessage({
+        message: userMessageContent,
+        model: 'claude-sonnet-4-5',
+        isThinkingEnabled: false
+      }, historyToKeep)
+    }
+  }
+
+  const switchVariant = (messageId: string, dir: number) => {
+    setMessages(prev => {
+      const index = prev.findIndex(m => m.id === messageId)
+      if (index === -1) return prev
+      const msg = { ...prev[index] }
+      if (!msg.variants) return prev
+      
+      let newActive = (msg.activeVariant || 0) + dir
+      if (newActive < 0) newActive = 0
+      if (newActive >= msg.variants.length) newActive = msg.variants.length - 1
+      
+      msg.activeVariant = newActive
+      msg.content = msg.variants[newActive]
+      
+      const next = [...prev]
+      next[index] = msg
+      return next
+    })
+  }
+
+  const handleEdit = (messageId: string) => {
+    const index = messages.findIndex(m => m.id === messageId)
+    if (index === -1) return
+    
+    // Copy to clipboard and rollback chat
+    navigator.clipboard.writeText(messages[index].content)
+    setMessages(messages.slice(0, index))
+    toast.success('Message copied! You can paste it to edit.')
+  }
 
   return (
     <div className="flex flex-col h-full bg-[#FAF9F5] relative overflow-hidden">
@@ -225,18 +322,39 @@ export default function Chat() {
                   <div
                     className={`relative ${
                       message.role === 'user'
-                        ? 'bg-[#F0EEE6] text-[#1F1E1D] rounded-2xl px-4 py-2.5 shadow-sm max-w-[85%]'
-                        : 'w-full text-[#1F1E1D]'
+                        ? 'bg-ink text-paper rounded-2xl px-5 py-3 shadow-premium max-w-[85%]'
+                        : 'w-full text-ink'
                     }`}
                   >
                     {message.role === 'assistant' ? (
-                      <div className="font-serif text-[18px] leading-relaxed prose prose-stone prose-serif max-w-none prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2 prose-code:text-primary prose-code:bg-primary/5 prose-code:px-1 prose-code:rounded">
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      <div>
+                        {message.variants && message.variants.length > 1 && (
+                          <div className="flex items-center gap-2 text-xs font-bold text-ink-muted mb-2 font-sans opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => switchVariant(message.id, -1)}
+                              disabled={(message.activeVariant || 0) === 0}
+                              className="hover:text-ink disabled:opacity-30 p-1"
+                            >
+                              &lt;
+                            </button>
+                            <span>{(message.activeVariant || 0) + 1} / {message.variants.length}</span>
+                            <button 
+                              onClick={() => switchVariant(message.id, 1)}
+                              disabled={(message.activeVariant || 0) === message.variants.length - 1}
+                              className="hover:text-ink disabled:opacity-30 p-1"
+                            >
+                              &gt;
+                            </button>
+                          </div>
+                        )}
+                        <div className="prose prose-sm md:prose-base prose-slate max-w-none text-ink prose-p:leading-relaxed prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-code:text-primary prose-code:bg-primary/5 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-pre:bg-paper-warm prose-pre:text-ink prose-pre:border prose-pre:border-border prose-headings:text-ink prose-li:my-1 font-sans">
+                          <ReactMarkdown>{message.content}</ReactMarkdown>
+                        </div>
                       </div>
                     ) : (
-                      <span className="text-[15px] font-sans leading-normal truncate block max-w-full">
+                      <div className="text-[15px] font-sans font-medium leading-relaxed whitespace-pre-wrap break-words">
                         {message.content}
-                      </span>
+                      </div>
                     )}
                   </div>
 
@@ -254,16 +372,16 @@ export default function Chat() {
                     <div className="flex items-center gap-1.5">
                       {message.role === 'assistant' ? (
                         <>
-                          <button title="Copy" className="p-1 hover:text-ink-soft transition-colors"><Copy size={13} /></button>
-                          <button title="Helpful" className="p-1 hover:text-success transition-colors"><ThumbsUp size={13} /></button>
-                          <button title="Not helpful" className="p-1 hover:text-red-500 transition-colors"><ThumbsDown size={13} /></button>
-                          <button title="Retry" className="p-1 hover:text-primary transition-colors"><RotateCcw size={13} /></button>
+                          <button onClick={() => handleCopy(message.content)} title="Copy" className="p-1 hover:text-ink-soft transition-colors"><Copy size={13} /></button>
+                          <button onClick={() => handleFeedback(true)} title="Helpful" className="p-1 hover:text-success transition-colors"><ThumbsUp size={13} /></button>
+                          <button onClick={() => handleFeedback(false)} title="Not helpful" className="p-1 hover:text-red-500 transition-colors"><ThumbsDown size={13} /></button>
+                          <button onClick={() => handleRetry(message.id)} title="Retry" className="p-1 hover:text-primary transition-colors"><RotateCcw size={13} /></button>
                         </>
                       ) : (
                         <>
-                          <button title="Retry" className="p-1 hover:text-primary transition-colors"><RotateCcw size={13} /></button>
-                          <button title="Edit" className="p-1 hover:text-ink-soft transition-colors"><Pencil size={13} /></button>
-                          <button title="Copy" className="p-1 hover:text-ink-soft transition-colors"><Copy size={13} /></button>
+                          <button onClick={() => handleRetry(message.id)} title="Retry" className="p-1 hover:text-primary transition-colors"><RotateCcw size={13} /></button>
+                          <button onClick={() => handleEdit(message.id)} title="Edit" className="p-1 hover:text-ink-soft transition-colors"><Pencil size={13} /></button>
+                          <button onClick={() => handleCopy(message.content)} title="Copy" className="p-1 hover:text-ink-soft transition-colors"><Copy size={13} /></button>
                         </>
                       )}
                     </div>

@@ -1,9 +1,12 @@
 import dotenv from 'dotenv';
-dotenv.config();
+// Load .env dynamically for local development
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    dotenv.config();
+}
 const nodeEnv = process.env.NODE_ENV || 'development';
 export const config = {
     port: process.env.PORT || 3001,
-    jwtSecret: process.env.JWT_SECRET || (nodeEnv === 'production' ? (() => { throw new Error('JWT_SECRET is required in production'); })() : 'dev_secret_key_1234567890'),
+    jwtSecret: process.env.JWT_SECRET || (nodeEnv === 'production' ? 'missing_prod_secret' : 'dev_secret_key_1234567890'),
     anthropicKey: process.env.ANTHROPIC_API_KEY,
     githubToken: process.env.GITHUB_TOKEN,
     nodeEnv,

@@ -1,5 +1,8 @@
 import { supabaseAdmin } from './supabase.js';
 export async function buildUserContext(userId) {
+    if (!supabaseAdmin) {
+        return { activeVoice: null, allProjects: [], primaryProject: null };
+    }
     // Fetch all context in parallel
     const [{ data: activeVoice }, { data: allProjects }, { data: primaryProject }] = await Promise.all([
         supabaseAdmin

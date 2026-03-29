@@ -1,12 +1,15 @@
 {
   "name": "shipscribe-mcp",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Developer activity tracker MCP server",
   "main": "dist/index.js",
   "bin": {
-    "shipscribe-setup": "dist/setup.js",
-    "shipscribe-mcp": "dist/index.js"
+    "shipscribe-mcp": "dist/index.js",
+    "shipscribe-setup": "dist/setup.js"
   },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
@@ -15,6 +18,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "api": "tsx watch src/api/index.ts",
+    "api:dev": "tsx watch src/api/index.ts",
+    "dashboard:dev": "npm run dev --prefix shipscribe-dashboard",
+    "dev:all": "concurrently --names \"API,DASHBOARD\" --prefix-colors \"blue,green\" \"npm run api:dev\" \"npm run dashboard:dev\"",
     "build": "tsc",
     "start": "node dist/index.js"
   },
@@ -38,6 +44,8 @@
     "@types/morgan": "^1.9.10",
     "@types/node": "^22.13.9",
     "@types/uuid": "^11.0.0",
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.14",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }

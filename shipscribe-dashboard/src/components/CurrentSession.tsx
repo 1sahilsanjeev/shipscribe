@@ -1,28 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../lib/api';
 import { Timer, FileCode, CheckCircle2 } from 'lucide-react';
+import { useServerStatus } from '../context/ServerStatusContext';
+
+// Backoff: 10s, 30s, 60s, 120s (max)
+const getBackoffMs = (failCount: number) => Math.min(120_000, 10_000 * Math.pow(3, failCount - 1));
 
 const CurrentSession: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [ticker, setTicker] = useState(0);
+  const { serverOnline } = useServerStatus();
+  const failCountRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchSession = async () => {
+  const fetchSession = useCallback(async () => {
+    if (!serverOnline) return;
     try {
       const response = await api.get('/api/activity/live');
+      failCountRef.current = 0;
       setSession(response.data.current_session);
-    } catch (error) {
-      console.error('Error fetching live session:', error);
+    } catch (error: any) {
+      if (error.code !== 'ERR_NETWORK') {
+        console.error('Error fetching live session:', error.message);
+      }
+      failCountRef.current += 1;
     } finally {
       setLoading(false);
     }
-  };
+  }, [serverOnline]);
 
   useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!serverOnline) return;
+
     fetchSession();
-    const interval = setInterval(fetchSession, 10000); // 10s poll
-    return () => clearInterval(interval);
-  }, []);
+
+    const schedule = () => {
+      const delay = failCountRef.current === 0 ? 10_000 : getBackoffMs(failCountRef.current);
+      timerRef.current = setTimeout(async () => { await fetchSession(); schedule(); }, delay);
+    };
+    schedule();
+
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [fetchSession, serverOnline]);
 
   useEffect(() => {
     const timer = setInterval(() => setTicker(t => t + 1), 1000);

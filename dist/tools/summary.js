@@ -4,6 +4,8 @@ export async function getSummary(userId, date, format = 'short') {
     const targetDate = date || new Date().toISOString().split('T')[0];
     try {
         // 1. Fetch today's activities
+        if (!supabaseAdmin)
+            throw new Error("Database not initialized");
         const { data: activities } = await supabaseAdmin
             .from('activities')
             .select('note, source, project, editor, timestamp')
@@ -37,9 +39,9 @@ export async function getSummary(userId, date, format = 'short') {
         // 5. Calculate stats
         const totalMins = timeSessions?.reduce((sum, s) => sum + (s.duration_mins || 0), 0) || 0;
         const totalHours = (totalMins / 60).toFixed(1);
-        const githubActivities = activities?.filter(a => a.source === 'github') || [];
-        const fileEdits = activities?.filter(a => a.source === 'file_watcher') || [];
-        const uniqueProjects = [...new Set(activities?.map(a => a.project).filter(Boolean))];
+        const githubActivities = activities?.filter((a) => a.source === 'github') || [];
+        const fileEdits = activities?.filter((a) => a.source === 'file_watcher') || [];
+        const uniqueProjects = [...new Set(activities?.map((a) => a.project).filter(Boolean))];
         if (!activities?.length && !tasks?.length) {
             return "No activity recorded today yet.\nStart coding and run /get_summary again!";
         }
@@ -87,13 +89,13 @@ Additionally, at the very end of your response, provide a short, catchy Twitter/
 - Projects worked on: ${uniqueProjects.join(', ') || 'none'}
 
 ## Activities (most recent first)
-${activities?.slice(0, 30).map(a => `- [${a.source}] ${a.note}`).join('\n') || 'No activities recorded'}
+${activities?.slice(0, 30).map((a) => `- [${a.source}] ${a.note}`).join('\n') || 'No activities recorded'}
 
 ## Tasks Completed Today
-${tasks?.map(t => `- ✓ ${t.title} (${t.project})`).join('\n') || 'No tasks completed'}
+${tasks?.map((t) => `- ✓ ${t.title} (${t.project})`).join('\n') || 'No tasks completed'}
 
 ## Tasks Still Todo
-${todoTasks?.map(t => `- [ ] ${t.title} (${t.priority} priority)`).join('\n') || 'No pending tasks'}
+${todoTasks?.map((t) => `- [ ] ${t.title} (${t.priority} priority)`).join('\n') || 'No pending tasks'}
 
 ${selectedFormat}`;
         // 7. Call Claude API
@@ -123,7 +125,7 @@ ${selectedFormat}`;
         if (format === 'short') {
             formattedText = summaryText
                 .split('\n')
-                .map(line => {
+                .map((line) => {
                 if (line.trim().startsWith('-') && !line.includes('**')) {
                     const text = line.replace('-', '').trim();
                     return `**• ${text}**`;
@@ -133,6 +135,8 @@ ${selectedFormat}`;
                 .join('\n');
         }
         // 8. Save to Supabase
+        if (!supabaseAdmin)
+            return `## Summary for ${targetDate} 📝\n\n${formattedText}\n\n(Database not available for saving)`;
         const { data: saved, error: saveError } = await supabaseAdmin
             .from('summaries')
             .insert({

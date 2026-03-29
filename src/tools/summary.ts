@@ -6,6 +6,7 @@ export async function getSummary(userId: string, date?: string, format: string =
 
   try {
     // 1. Fetch today's activities
+    if (!supabaseAdmin) throw new Error("Database not initialized");
     const { data: activities } = await supabaseAdmin
       .from('activities')
       .select('note, source, project, editor, timestamp')
@@ -42,17 +43,17 @@ export async function getSummary(userId: string, date?: string, format: string =
 
     // 5. Calculate stats
     const totalMins = timeSessions?.reduce(
-      (sum, s) => sum + (s.duration_mins || 0), 0
+      (sum: number, s: any) => sum + (s.duration_mins || 0), 0
     ) || 0
     const totalHours = (totalMins / 60).toFixed(1)
     const githubActivities = activities?.filter(
-      a => a.source === 'github'
+      (a: any) => a.source === 'github'
     ) || []
     const fileEdits = activities?.filter(
-      a => a.source === 'file_watcher'
+      (a: any) => a.source === 'file_watcher'
     ) || []
     const uniqueProjects = [...new Set(
-      activities?.map(a => a.project).filter(Boolean)
+      activities?.map((a: any) => a.project).filter(Boolean)
     )]
 
     if (!activities?.length && !tasks?.length) {
@@ -109,17 +110,17 @@ Additionally, at the very end of your response, provide a short, catchy Twitter/
 - Projects worked on: ${uniqueProjects.join(', ') || 'none'}
 
 ## Activities (most recent first)
-${activities?.slice(0, 30).map(a => 
+${activities?.slice(0, 30).map((a: any) => 
   `- [${a.source}] ${a.note}`
 ).join('\n') || 'No activities recorded'}
 
 ## Tasks Completed Today
-${tasks?.map(t => 
+${tasks?.map((t: any) => 
   `- ✓ ${t.title} (${t.project})`
 ).join('\n') || 'No tasks completed'}
 
 ## Tasks Still Todo
-${todoTasks?.map(t => 
+${todoTasks?.map((t: any) => 
   `- [ ] ${t.title} (${t.priority} priority)`
 ).join('\n') || 'No pending tasks'}
 
@@ -156,7 +157,7 @@ ${selectedFormat}`
     if (format === 'short') {
         formattedText = summaryText
             .split('\n')
-            .map(line => {
+            .map((line: string) => {
                 if (line.trim().startsWith('-') && !line.includes('**')) {
                     const text = line.replace('-', '').trim();
                     return `**• ${text}**`;
@@ -167,6 +168,7 @@ ${selectedFormat}`
     }
 
     // 8. Save to Supabase
+    if (!supabaseAdmin) return `## Summary for ${targetDate} 📝\n\n${formattedText}\n\n(Database not available for saving)`;
     const { data: saved, error: saveError } = await supabaseAdmin
       .from('summaries')
       .insert({

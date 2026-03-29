@@ -38,21 +38,24 @@ export function getConfigPath(
   return paths[editor][os];
 }
 
-export function getOneCommandInstall(apiKey: string): string {
-  return `npx -y github:1sahilsanjeev/shipscribe shipscribe-setup --key ${apiKey}`;
+export function getOneCommandInstall(apiKey: string, apiUrl?: string): string {
+  const url = apiUrl ? ` --url ${apiUrl}` : '';
+  return `npx -y shipscribe-setup --key ${apiKey}${url}`;
 }
 
 export function getConfigBlock(
-  apiKey: string
+  apiKey: string,
+  apiUrl?: string
 ): string {
+  const url = apiUrl || "https://www.shipscribe.pro/api";
   return JSON.stringify({
     mcpServers: {
       shipscribe: {
         command: "npx",
-        args: ["-y", "github:1sahilsanjeev/shipscribe", "shipscribe-mcp"],
+        args: ["-y", "shipscribe-mcp"],
         env: {
           SHIPSCRIBE_API_KEY: apiKey,
-          SHIPSCRIBE_API_URL: "https://www.shipscribe.pro/api"
+          SHIPSCRIBE_API_URL: url
         }
       }
     }

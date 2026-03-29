@@ -33,7 +33,7 @@ export default function Posts() {
     }
     
     // Fetch personas and current active
-    api.get('/api/voice').then(res => {
+    api.get('/voice').then(res => {
       setPersonas(res.data || [])
       const active = res.data?.find((p: any) => p.is_active)
       setSelectedVoice(active?.id || null)
@@ -86,7 +86,7 @@ export default function Posts() {
 
   async function fetchSavedPosts() {
     try {
-      const res = await api.get('/api/posts')
+      const res = await api.get('/posts')
       setSavedPosts(res.data)
     } catch (err) {
       console.error('Failed to fetch posts:', err)

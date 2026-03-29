@@ -14,6 +14,7 @@ interface ClaudeLogEntry {
 }
 
 export async function syncClaudeCode(userId: string) {
+  if (!supabaseAdmin) return { sessions_found: 0, sessions_synced: 0 };
   const logsDir = path.join(os.homedir(), '.claude', 'logs');
   
   if (!fs.existsSync(logsDir)) {

@@ -3,6 +3,8 @@ import path from 'path';
 import os from 'os';
 import { supabaseAdmin } from '../lib/supabase.js';
 export async function syncClaudeCode(userId) {
+    if (!supabaseAdmin)
+        return { sessions_found: 0, sessions_synced: 0 };
     const logsDir = path.join(os.homedir(), '.claude', 'logs');
     if (!fs.existsSync(logsDir)) {
         return {

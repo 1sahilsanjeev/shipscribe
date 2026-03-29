@@ -1,6 +1,8 @@
 import { supabaseAdmin } from '../lib/supabase.js';
 
 export async function performGithubSync(userId: string) {
+  if (!supabaseAdmin) return { synced: 0, events: [], error: 'Database not initialized' };
+  
   // Get GitHub credentials from profiles table
   const { data: profile, error: profError } = await supabaseAdmin
     .from('profiles')
@@ -86,6 +88,7 @@ export async function performGithubSync(userId: string) {
 }
 
 export async function syncGitHub(userId: string, autoSyncStatus: string) {
+  if (!supabaseAdmin) return { error: 'Database not initialized' };
   const result = await performGithubSync(userId);
   
   const todayStart = new Date();
@@ -108,7 +111,7 @@ export async function syncGitHub(userId: string, autoSyncStatus: string) {
       
     // Manual grouping since PostgREST grouping is limited without a view or rpc
     const counts: Record<string, number> = {};
-    repoBreakdown?.forEach(item => {
+    repoBreakdown?.forEach((item: any) => {
       counts[item.project] = (counts[item.project] || 0) + 1;
     });
     const formattedBreakdown = Object.entries(counts).map(([project, count]) => ({ project, count }));

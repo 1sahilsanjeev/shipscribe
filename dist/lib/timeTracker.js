@@ -2,6 +2,8 @@ import { supabaseAdmin } from '../lib/supabase.js';
 const SESSION_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 const activeSessions = new Map();
 export function heartbeat(userId, project, source, file) {
+    if (!supabaseAdmin)
+        return;
     const key = `${userId}:${project}`;
     let session = activeSessions.get(key);
     const now = Date.now();
@@ -70,7 +72,7 @@ export async function getTimeToday(userId) {
             throw error;
         const summary = {};
         let totalMins = 0;
-        sessions.forEach(s => {
+        sessions.forEach((s) => {
             if (!summary[s.project])
                 summary[s.project] = { mins: 0, sessions: 0 };
             summary[s.project].mins += s.duration_mins || 0;
@@ -89,7 +91,7 @@ export async function getTimeToday(userId) {
             .select('timestamp')
             .eq('user_id', userId)
             .gte('timestamp', `${today}T00:00:00Z`);
-        const hours = (activities || []).map(a => new Date(a.timestamp).getHours());
+        const hours = (activities || []).map((a) => new Date(a.timestamp).getHours());
         const counts = hours.reduce((acc, h) => { acc[h] = (acc[h] || 0) + 1; return acc; }, {});
         let maxHour = 0;
         let maxCount = 0;
@@ -124,8 +126,8 @@ export async function getTimeWeek(userId) {
         if (error)
             throw error;
         return {
-            total_hours: parseFloat((sessions.reduce((acc, s) => acc + (s.duration_mins || 0), 0) / 60).toFixed(1)),
-            sessions_count: sessions.length
+            total_hours: parseFloat(((sessions || []).reduce((acc, s) => acc + (s.duration_mins || 0), 0) / 60).toFixed(1)),
+            sessions_count: (sessions || []).length
         };
     }
     catch (error) {

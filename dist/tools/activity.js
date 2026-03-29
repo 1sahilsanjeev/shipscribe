@@ -10,10 +10,12 @@ const EDITOR_NAME = (() => {
 })();
 export async function trackActivity(userId, note, project = 'default') {
     const source = 'manual'; // Default to manual for this tool
-    console.log('[track_activity] called with:', { userId, note, project });
-    console.log('[track_activity] user_id being used:', userId);
+    console.error('[track_activity] called with:', { userId, note, project });
+    console.error('[track_activity] user_id being used:', userId);
     try {
-        console.log('[track_activity] inserting to Supabase activities table...');
+        if (!supabaseAdmin)
+            return 'Error: Database not initialized';
+        console.error('[track_activity] inserting to Supabase activities table...');
         const { data, error } = await supabaseAdmin
             .from('activities')
             .insert({
@@ -26,7 +28,7 @@ export async function trackActivity(userId, note, project = 'default') {
         })
             .select()
             .single();
-        console.log('[track_activity] Supabase result:', { data, error });
+        console.error('[track_activity] Supabase result:', { data, error });
         if (error) {
             console.error('[track_activity] Supabase Error:', error);
             throw error;

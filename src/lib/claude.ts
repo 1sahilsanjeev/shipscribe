@@ -11,9 +11,9 @@ if (!process.env.ANTHROPIC_API_KEY) {
   console.error('[claude] ERROR: ANTHROPIC_API_KEY is not set')
   console.error('[claude] Add it to your .env file')
 } else {
-  console.log('[claude] Anthropic client initialized ✓')
-  console.log('[claude] Model:', CLAUDE_MODEL)
-  console.log('[claude] Key prefix:', 
+  console.error('[claude] Anthropic client initialized ✓')
+  console.error('[claude] Model:', CLAUDE_MODEL)
+  console.error('[claude] Key prefix:', 
     process.env.ANTHROPIC_API_KEY.slice(0, 12) + '...')
 }
 

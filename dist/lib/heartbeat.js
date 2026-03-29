@@ -4,22 +4,18 @@ const MAX_RETRIES = 5; // before giving up
 const RECONNECT_INTERVAL = 30_000; // retry after giving up
 let isConnected = false;
 let retryCount = 0;
-export async function sendHeartbeat() {
-    const apiUrl = process.env.SHIPSCRIBE_API_URL
-        || 'http://127.0.0.1:3001';
-    const apiKey = process.env.SHIPSCRIBE_API_KEY;
+export async function sendHeartbeat(apiKey, apiUrl) {
     if (!apiKey) {
-        console.log(`[shipscribe] ✗ No SHIPSCRIBE_API_KEY set (API URL: ${apiUrl})`);
+        console.error(`[shipscribe] ✗ No SHIPSCRIBE_API_KEY provided (API URL: ${apiUrl})`);
         return false;
     }
     try {
         const time = new Date().toLocaleTimeString();
-        console.log(`[shipscribe] [${time}] Attempting heartbeat to ${apiUrl}...`);
-        const response = await fetch(`${apiUrl}/api/auth/heartbeat`, {
+        console.error(`[shipscribe] [${time}] Attempting heartbeat to ${apiUrl}...`);
+        const response = await fetch(`${apiUrl}/mcp/heartbeat`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
             body: JSON.stringify({
-                api_key: apiKey,
                 editor: getDetectedEditor(),
                 platform: process.platform,
                 node_version: process.version,
@@ -27,15 +23,17 @@ export async function sendHeartbeat() {
             }),
             signal: AbortSignal.timeout(5000) // 5 second timeout
         });
-        if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        const isJson = contentType && contentType.includes('application/json');
+        if (response.ok && isJson) {
             const data = (await response.json());
             const time = new Date().toLocaleTimeString();
             if (!isConnected) {
                 // Just reconnected
-                console.log(`[shipscribe] [${time}] ✓ Reconnected successfully!`);
-                console.log(`[shipscribe] [${time}] ✓ Missed heartbeats: ${retryCount}`);
-                console.log(`[shipscribe] [${time}] ✓ Connected as: ${data.email || 'unknown'}`);
-                console.log(`[shipscribe] [${time}] ✓ Resuming normal operation`);
+                console.error(`[shipscribe] [${time}] ✓ Reconnected successfully!`);
+                console.error(`[shipscribe] [${time}] ✓ Missed heartbeats: ${retryCount}`);
+                console.error(`[shipscribe] [${time}] ✓ Connected as: ${data.email || 'unknown'}`);
+                console.error(`[shipscribe] [${time}] ✓ Resuming normal operation`);
             }
             isConnected = true;
             retryCount = 0;
@@ -49,19 +47,19 @@ export async function sendHeartbeat() {
         const time = new Date().toLocaleTimeString();
         if (isConnected) {
             // Just lost connection
-            console.log(`[shipscribe] [${time}] ✗ Lost connection to dashboard`);
-            console.log(`[shipscribe] [${time}] Will retry every 10 seconds...`);
+            console.error(`[shipscribe] [${time}] ✗ Lost connection to dashboard`);
+            console.error(`[shipscribe] [${time}] Will retry every 10 seconds...`);
         }
         isConnected = false;
         retryCount++;
         if (err.code === 'ECONNREFUSED') {
             if (retryCount === 1) {
-                console.log(`[shipscribe] [${time}] API server is not running`);
-                console.log(`[shipscribe] [${time}] Start it with: cd D:\\shipscribe && pnpm dev`);
+                console.error(`[shipscribe] [${time}] API server is not running`);
+                console.error(`[shipscribe] [${time}] Start it with: cd D:\\shipscribe && pnpm dev`);
             }
         }
         if (retryCount <= MAX_RETRIES) {
-            console.log(`[shipscribe] [${time}] Retry ${retryCount}/${MAX_RETRIES} — ${err.message}`);
+            console.error(`[shipscribe] [${time}] Retry ${retryCount}/${MAX_RETRIES} — ${err.message}`);
         }
         return false;
     }
@@ -102,22 +100,22 @@ let _cachedEditor = null;
 export function getDetectedEditor() {
     if (!_cachedEditor) {
         _cachedEditor = detectEditor();
-        console.log(`[shipscribe] Editor detected: ${_cachedEditor}`);
+        console.error(`[shipscribe] Editor detected: ${_cachedEditor}`);
     }
     return _cachedEditor;
 }
-export function startHeartbeat() {
+export function startHeartbeat(apiKey, apiUrl) {
     const time = new Date().toLocaleTimeString();
-    console.log(`[shipscribe] [${time}] Starting heartbeat system...`);
+    console.error(`[shipscribe] [${time}] Starting heartbeat system...`);
     // Send immediately on startup
-    sendHeartbeat().then(connected => {
+    sendHeartbeat(apiKey, apiUrl).then(connected => {
         const now = new Date().toLocaleTimeString();
         if (connected) {
-            console.log(`[shipscribe] [${now}] ✓ Dashboard connection established`);
+            console.error(`[shipscribe] [${now}] ✓ Dashboard connection established`);
         }
         else {
-            console.log(`[shipscribe] [${now}] ✗ Dashboard not reachable — will keep trying`);
-            console.log(`[shipscribe] [${now}] Make sure the API is running on ${process.env.SHIPSCRIBE_API_URL || 'http://localhost:3001'}`);
+            console.error(`[shipscribe] [${now}] ✗ Dashboard not reachable — will keep trying`);
+            console.error(`[shipscribe] [${now}] Make sure the API is running on ${apiUrl}`);
         }
     });
     // Smart interval — checks every 5 seconds
@@ -133,7 +131,7 @@ export function startHeartbeat() {
             : RETRY_INTERVAL;
         if (timeSinceLastHeartbeat >= targetInterval) {
             lastHeartbeat = now;
-            await sendHeartbeat();
+            await sendHeartbeat(apiKey, apiUrl);
         }
     }, 5000); // check every 5 seconds
 }

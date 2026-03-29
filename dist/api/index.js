@@ -1,10 +1,23 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+// Load .env dynamically for local development without import.meta.url which breaks Vercel
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+}
+console.log('[startup] Environment check:');
+console.log('[startup] SUPABASE_URL:', process.env.SUPABASE_URL ? '✓ set' : '✗ MISSING');
+console.log('[startup] SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? '✓ set' : '✗ MISSING');
+console.log('[startup] SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✓ set' : '✗ MISSING');
+console.log('[startup] ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? '✓ set' : '✗ MISSING');
+console.log('[startup] JWT_SECRET:', process.env.JWT_SECRET ? '✓ set' : '✗ MISSING');
+console.log('[startup] NODE_ENV:', process.env.NODE_ENV);
+console.log('[startup] PORT:', process.env.PORT);
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
+import { rateLimit } from 'express-rate-limit';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { getTimeToday } from '../lib/timeTracker.js';
 import { authenticate } from '../middleware/authenticate.js';
@@ -19,6 +32,7 @@ import voiceRouter from './voice.js';
 import projectsRouter from './projects.js';
 import waitlistRouter from './waitlist.js';
 import adminRouter from './admin.js';
+import mcpRouter from './mcpRouter.js';
 const app = express();
 // --- Production Middleware ---
 app.use(helmet());
@@ -43,297 +57,304 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
-// --- Routes ---
-app.get('/api/auth/me', authenticate, (req, res) => {
-    res.json(req.user);
+app.use((req, res, next) => {
+    const originalJson = res.json.bind(res);
+    res.json = (data) => {
+        return originalJson(data);
+    };
+    next();
 });
+// --- Routes ---
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        env: {
+            supabase: !!process.env.SUPABASE_URL,
+            service_key: !!process.env.SUPABASE_SERVICE_KEY,
+            anthropic: !!process.env.ANTHROPIC_API_KEY,
+            node_env: process.env.NODE_ENV
+        }
+    });
+});
+import { handle } from '../lib/routeHandler.js';
+app.get('/api/auth/me', authenticate, handle(async (req, res) => {
+    res.json(req.user);
+}));
+app.get('/api/auth/validate-key', handle(async (req, res) => {
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey || typeof apiKey !== 'string') {
+        res.status(400).json({ error: 'Missing or invalid API key header' });
+        return;
+    }
+    if (!supabaseAdmin) {
+        console.error('[API] Validate-key failed: Supabase admin client not initialized');
+        res.status(503).json({ error: 'Authentication service unavailable (Supabase keys missing)' });
+        return;
+    }
+    const { data: profile, error } = await supabaseAdmin
+        .from('profiles')
+        .select('id, email')
+        .eq('api_key', apiKey)
+        .maybeSingle();
+    if (error) {
+        console.error('[API] Database error during validation:', JSON.stringify(error, null, 2));
+        res.status(500).json({ error: 'Database error', details: error.message });
+        return;
+    }
+    if (!profile) {
+        res.status(401).json({ error: 'Invalid API key' });
+        return;
+    }
+    res.json(profile);
+}));
 app.use('/api/auth', connectionsRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/mcp', authenticate, mcpRouter);
 // --- Activities ---
-app.get('/api/activities', authenticate, async (req, res) => {
+app.get('/api/activities', authenticate, handle(async (req, res) => {
     const { dateFrom, dateTo, editors, projects, sources, search, limit = 100 } = req.query;
     const userId = req.user.id;
-    try {
-        let query = supabaseAdmin
-            .from('activities')
-            .select('*')
-            .eq('user_id', userId)
-            .order('timestamp', { ascending: false });
-        if (dateFrom)
-            query = query.gte('timestamp', `${dateFrom}T00:00:00Z`);
-        if (dateTo)
-            query = query.lte('timestamp', `${dateTo}T23:59:59Z`);
-        if (editors && typeof editors === 'string') {
-            const editorList = editors.split(',').filter(Boolean);
-            if (editorList.length > 0)
-                query = query.in('editor', editorList);
-        }
-        if (projects && typeof projects === 'string') {
-            const projectList = projects.split(',').filter(Boolean);
-            if (projectList.length > 0)
-                query = query.in('project', projectList);
-        }
-        if (sources && typeof sources === 'string') {
-            const sourceList = sources.split(',').filter(Boolean);
-            if (sourceList.length > 0)
-                query = query.in('source', sourceList);
-        }
-        if (search && typeof search === 'string') {
-            query = query.ilike('note', `%${search}%`);
-        }
-        const { data, error } = await query.limit(Number(limit));
-        if (error) {
-            console.error('[API] Activities error:', error);
-            throw error;
-        }
-        res.json(data);
+    let query = supabaseAdmin
+        .from('activities')
+        .select('*')
+        .eq('user_id', userId)
+        .order('timestamp', { ascending: false });
+    if (dateFrom)
+        query = query.gte('timestamp', `${dateFrom}T00:00:00Z`);
+    if (dateTo)
+        query = query.lte('timestamp', `${dateTo}T23:59:59Z`);
+    if (editors && typeof editors === 'string') {
+        const editorList = editors.split(',').filter(Boolean);
+        if (editorList.length > 0)
+            query = query.in('editor', editorList);
     }
-    catch (error) {
-        res.status(500).json({ error: error.message });
+    if (projects && typeof projects === 'string') {
+        const projectList = projects.split(',').filter(Boolean);
+        if (projectList.length > 0)
+            query = query.in('project', projectList);
     }
-});
-app.get('/api/activities/export', authenticate, async (req, res) => {
+    if (sources && typeof sources === 'string') {
+        const sourceList = sources.split(',').filter(Boolean);
+        if (sourceList.length > 0)
+            query = query.in('source', sourceList);
+    }
+    if (search && typeof search === 'string') {
+        query = query.ilike('note', `%${search}%`);
+    }
+    const { data, error } = await query.limit(Number(limit));
+    if (error) {
+        console.error('[API] Activities error:', error);
+        throw error;
+    }
+    res.json(data);
+}));
+app.get('/api/activities/export', authenticate, handle(async (req, res) => {
     const { dateFrom, dateTo, editors, projects, sources, search, format = 'csv' } = req.query;
     const userId = req.user.id;
-    try {
-        let query = supabaseAdmin
-            .from('activities')
-            .select('timestamp, note, editor, source, project')
-            .eq('user_id', userId)
-            .order('timestamp', { ascending: false });
-        // ... filtering logic ...
-        if (dateFrom)
-            query = query.gte('timestamp', `${dateFrom}T00:00:00Z`);
-        if (dateTo)
-            query = query.lte('timestamp', `${dateTo}T23:59:59Z`);
-        if (editors && typeof editors === 'string') {
-            const editorList = editors.split(',').filter(Boolean);
-            if (editorList.length > 0)
-                query = query.in('editor', editorList);
-        }
-        if (projects && typeof projects === 'string') {
-            const projectList = projects.split(',').filter(Boolean);
-            if (projectList.length > 0)
-                query = query.in('project', projectList);
-        }
-        if (sources && typeof sources === 'string') {
-            const sourceList = sources.split(',').filter(Boolean);
-            if (sourceList.length > 0)
-                query = query.in('source', sourceList);
-        }
-        if (search && typeof search === 'string') {
-            query = query.ilike('note', `%${search}%`);
-        }
-        const { data, error } = await query;
-        if (error)
-            throw error;
-        const filename = `shipscribe_activity_${new Date().toISOString().split('T')[0]}_${userId.slice(0, 5)}`;
-        if (format === 'json') {
-            res.setHeader('Content-Type', 'application/json');
-            res.setHeader('Content-Disposition', `attachment; filename=${filename}.json`);
-            return res.status(200).send(JSON.stringify(data, null, 2));
-        }
-        // Default to CSV
-        const headers = ['Timestamp', 'Activity', 'Editor', 'Source', 'Project'];
-        const rows = (data || []).map(r => [
-            r.timestamp,
-            `"${(r.note || '').replace(/"/g, '""')}"`,
-            r.editor || 'unknown',
-            r.source || 'unknown',
-            r.project || 'default'
-        ]);
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-        ].join('\n');
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
-        res.status(200).send(csvContent);
+    let query = supabaseAdmin
+        .from('activities')
+        .select('timestamp, note, editor, source, project')
+        .eq('user_id', userId)
+        .order('timestamp', { ascending: false });
+    if (dateFrom)
+        query = query.gte('timestamp', `${dateFrom}T00:00:00Z`);
+    if (dateTo)
+        query = query.lte('timestamp', `${dateTo}T23:59:59Z`);
+    if (editors && typeof editors === 'string') {
+        const editorList = editors.split(',').filter(Boolean);
+        if (editorList.length > 0)
+            query = query.in('editor', editorList);
     }
-    catch (error) {
-        res.status(500).json({ error: error.message });
+    if (projects && typeof projects === 'string') {
+        const projectList = projects.split(',').filter(Boolean);
+        if (projectList.length > 0)
+            query = query.in('project', projectList);
     }
-});
-app.get('/api/activities/today', authenticate, async (req, res) => {
+    if (sources && typeof sources === 'string') {
+        const sourceList = sources.split(',').filter(Boolean);
+        if (sourceList.length > 0)
+            query = query.in('source', sourceList);
+    }
+    if (search && typeof search === 'string') {
+        query = query.ilike('note', `%${search}%`);
+    }
+    const { data, error } = await query;
+    if (error)
+        throw error;
+    const filename = `shipscribe_activity_${new Date().toISOString().split('T')[0]}_${userId.slice(0, 5)}`;
+    if (format === 'json') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}.json`);
+        res.status(200).send(JSON.stringify(data, null, 2));
+        return;
+    }
+    const headers = ['Timestamp', 'Activity', 'Editor', 'Source', 'Project'];
+    const rows = (data || []).map((r) => [
+        r.timestamp,
+        `"${(r.note || '').replace(/"/g, '""')}"`,
+        r.editor || 'unknown',
+        r.source || 'unknown',
+        r.project || 'default'
+    ]);
+    const csvContent = [
+        headers.join(','),
+        ...rows.map((row) => row.join(','))
+    ].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
+    res.status(200).send(csvContent);
+}));
+app.get('/api/activities/today', authenticate, handle(async (req, res) => {
     const userId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
-    try {
-        const { data: activities, error: actError } = await supabaseAdmin
-            .from('activities')
-            .select('*')
-            .eq('user_id', userId)
-            .gte('timestamp', `${today}T00:00:00Z`)
-            .order('timestamp', { ascending: false });
-        if (actError)
-            throw actError;
-        // PostgREST grouping equivalent
-        const { data: counts, error: countError } = await supabaseAdmin
-            .from('activities')
-            .select('source')
-            .eq('user_id', userId)
-            .gte('timestamp', `${today}T00:00:00Z`);
-        if (countError)
-            throw countError;
-        const grouped = (counts || []).reduce((acc, curr) => {
-            acc[curr.source] = (acc[curr.source] || 0) + 1;
-            return acc;
-        }, {});
-        const countsBySource = Object.entries(grouped).map(([source, count]) => ({ source, count }));
-        res.json({ activities: activities || [], countsBySource });
-    }
-    catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-app.get('/api/activity/live', authenticate, async (req, res) => {
+    const { data: activities, error: actError } = await supabaseAdmin
+        .from('activities')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('timestamp', `${today}T00:00:00Z`)
+        .order('timestamp', { ascending: false });
+    if (actError)
+        throw actError;
+    const { data: counts, error: countError } = await supabaseAdmin
+        .from('activities')
+        .select('source')
+        .eq('user_id', userId)
+        .gte('timestamp', `${today}T00:00:00Z`);
+    if (countError)
+        throw countError;
+    const grouped = (counts || []).reduce((acc, curr) => {
+        acc[curr.source] = (acc[curr.source] || 0) + 1;
+        return acc;
+    }, {});
+    const countsBySource = Object.entries(grouped).map(([source, count]) => ({ source, count }));
+    res.json({ activities: activities || [], countsBySource });
+}));
+app.get('/api/activity/live', authenticate, handle(async (req, res) => {
     const userId = req.user.id;
-    try {
-        const { data: activities } = await supabaseAdmin
-            .from('activities')
-            .select('*')
-            .eq('user_id', userId)
-            .order('timestamp', { ascending: false })
-            .limit(20);
-        const { data: currentSession } = await supabaseAdmin
-            .from('session_state') // Assuming updated table name
-            .select('*')
-            .eq('user_id', userId)
-            .eq('is_active', true)
-            .order('last_activity', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-        const timeToday = await getTimeToday(userId);
-        res.json({
-            activities: activities || [],
-            current_session: currentSession,
-            time_today: timeToday,
-            github_poller: { status: 'active', last_check: getGithubPollerStatus() }
-        });
-    }
-    catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+    const { data: activities } = await supabaseAdmin
+        .from('activities')
+        .select('*')
+        .eq('user_id', userId)
+        .order('timestamp', { ascending: false })
+        .limit(20);
+    const { data: currentSession } = await supabaseAdmin
+        .from('session_state')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('last_activity', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    const timeToday = await getTimeToday(userId);
+    res.json({
+        activities: activities || [],
+        current_session: currentSession,
+        time_today: timeToday,
+        github_poller: { status: 'active', last_check: getGithubPollerStatus() }
+    });
+}));
 // --- Tasks ---
-app.get('/api/tasks', authenticate, async (req, res) => {
+app.get('/api/tasks', authenticate, handle(async (req, res) => {
     const { status, project } = req.query;
     const userId = req.user.id;
-    try {
-        let query = supabaseAdmin
-            .from('tasks')
-            .select('*')
-            .eq('user_id', userId);
-        if (status && status !== 'all') {
-            query = query.eq('status', status);
-        }
-        if (project) {
-            query = query.eq('project', project);
-        }
-        const { data, error } = await query.order('created_at', { ascending: false });
-        if (error)
-            throw error;
-        res.json(data);
+    let query = supabaseAdmin
+        .from('tasks')
+        .select('*')
+        .eq('user_id', userId);
+    if (status && status !== 'all') {
+        query = query.eq('status', status);
     }
-    catch (error) {
-        res.status(500).json({ error: error.message });
+    if (project) {
+        query = query.eq('project', project);
     }
-});
-app.post('/api/tasks', authenticate, async (req, res) => {
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error)
+        throw error;
+    res.json(data);
+}));
+app.post('/api/tasks', authenticate, handle(async (req, res) => {
     const { title, project = 'default', priority = 'medium', status = 'todo', due_date } = req.body;
     const userId = req.user.id;
-    try {
-        const { data, error } = await supabaseAdmin
-            .from('tasks')
-            .insert({
-            user_id: userId,
-            title,
-            project,
-            priority,
-            status,
-            due_date: due_date || null
-        })
-            .select()
-            .single();
-        if (error)
-            throw error;
-        res.json(data);
-    }
-    catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-app.patch('/api/tasks/:id/status', authenticate, async (req, res) => {
+    const { data, error } = await supabaseAdmin
+        .from('tasks')
+        .insert({
+        user_id: userId,
+        title,
+        project,
+        priority,
+        status,
+        due_date: due_date || null
+    })
+        .select()
+        .single();
+    if (error)
+        throw error;
+    res.json(data);
+}));
+app.patch('/api/tasks/:id/status', authenticate, handle(async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     const userId = req.user.id;
-    try {
-        const { data, error } = await supabaseAdmin
-            .from('tasks')
-            .update({
-            status,
-            completed_at: status === 'done' ? new Date().toISOString() : null
-        })
-            .eq('id', id)
-            .eq('user_id', userId)
-            .select()
-            .single();
-        if (error)
-            return res.status(404).json({ error: 'Task not found or unauthorized' });
-        res.json(data);
+    const { data, error } = await supabaseAdmin
+        .from('tasks')
+        .update({
+        status,
+        completed_at: status === 'done' ? new Date().toISOString() : null
+    })
+        .eq('id', id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+    if (error) {
+        res.status(404).json({ error: 'Task not found or unauthorized' });
+        return;
     }
-    catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-app.patch('/api/tasks/:id', authenticate, async (req, res) => {
+    res.json(data);
+}));
+app.patch('/api/tasks/:id', authenticate, handle(async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     const { title, project, priority, status, completed_at } = req.body;
-    try {
-        const updates = {};
-        if (title !== undefined)
-            updates.title = title;
-        if (project !== undefined)
-            updates.project = project;
-        if (priority !== undefined)
-            updates.priority = priority;
-        if (status !== undefined) {
-            updates.status = status;
-            updates.completed_at = status === 'done' ? new Date().toISOString() : (completed_at !== undefined ? completed_at : null);
-        }
-        const { data, error } = await supabaseAdmin
-            .from('tasks')
-            .update(updates)
-            .eq('id', id)
-            .eq('user_id', userId)
-            .select()
-            .single();
-        if (error)
-            return res.status(404).json({ error: 'Task not found or unauthorized' });
-        res.json(data);
+    const updates = {};
+    if (title !== undefined)
+        updates.title = title;
+    if (project !== undefined)
+        updates.project = project;
+    if (priority !== undefined)
+        updates.priority = priority;
+    if (status !== undefined) {
+        updates.status = status;
+        updates.completed_at = status === 'done' ? new Date().toISOString() : (completed_at !== undefined ? completed_at : null);
     }
-    catch (error) {
-        res.status(500).json({ error: error.message });
+    const { data, error } = await supabaseAdmin
+        .from('tasks')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+    if (error) {
+        res.status(404).json({ error: 'Task not found or unauthorized' });
+        return;
     }
-});
-app.delete('/api/tasks/:id', authenticate, async (req, res) => {
+    res.json(data);
+}));
+app.delete('/api/tasks/:id', authenticate, handle(async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
-    try {
-        const { error } = await supabaseAdmin
-            .from('tasks')
-            .delete()
-            .eq('id', id)
-            .eq('user_id', userId);
-        if (error)
-            return res.status(404).json({ error: 'Task not found or unauthorized' });
-        res.json({ success: true });
+    const { error } = await supabaseAdmin
+        .from('tasks')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+    if (error) {
+        res.status(404).json({ error: 'Task not found or unauthorized' });
+        return;
     }
-    catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+    res.json({ success: true });
+}));
 // --- Summaries ---
 app.use('/api/summaries', summariesRouter);
 app.use('/api/posts', postsRouter);
@@ -342,35 +363,74 @@ app.use('/api/projects', projectsRouter);
 app.use('/api/waitlist', waitlistRouter);
 app.use('/api/admin', adminRouter);
 // --- Stats ---
-app.get('/api/stats', authenticate, async (req, res) => {
-    const userId = req.user.id;
-    const today = new Date().toISOString().split('T')[0];
+app.get('/api/stats', authenticate, handle(async (req, res) => {
     try {
-        const { count: actCount } = await supabaseAdmin
-            .from('activities')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId)
-            .gte('timestamp', `${today}T00:00:00Z`);
-        const { count: doneCount } = await supabaseAdmin
-            .from('tasks')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId)
-            .eq('status', 'done')
-            .gte('completed_at', `${today}T00:00:00Z`);
-        const { count: todoCount } = await supabaseAdmin
-            .from('tasks')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId)
-            .eq('status', 'todo');
+        const userId = req.user.id;
+        const today = new Date().toISOString().split('T')[0];
+        const [activities, tasks, streak] = await Promise.allSettled([
+            supabaseAdmin
+                .from('activities')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId)
+                .gte('timestamp', `${today}T00:00:00`),
+            supabaseAdmin
+                .from('tasks')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId)
+                .eq('status', 'done')
+                .gte('completed_at', `${today}T00:00:00`),
+            supabaseAdmin
+                .from('activities')
+                .select('timestamp')
+                .eq('user_id', userId)
+                .order('timestamp', { ascending: false })
+                .limit(100)
+        ]);
         res.json({
-            today_activities: actCount || 0,
-            tasks_completed_today: doneCount || 0,
-            current_streak: 5, // Hardcoded for now
-            total_tasks_todo: todoCount || 0
+            today_activities: activities.status === 'fulfilled'
+                ? (activities.value.count || 0) : 0,
+            tasks_completed_today: tasks.status === 'fulfilled'
+                ? (tasks.value.count || 0) : 0,
+            current_streak: 5,
+            total_tasks_todo: 0
         });
     }
-    catch (error) {
-        res.status(500).json({ error: error.message });
+    catch (err) {
+        // Never return 500 for stats — return zeros
+        console.error('[stats] Error:', err.message);
+        res.json({
+            today_activities: 0,
+            tasks_completed_today: 0,
+            current_streak: 0,
+            total_tasks_todo: 0
+        });
     }
+}));
+// Removed global uncaught exception handlers as they break AWS Lambda / Vercel Serverless functions
+app.use((err, req, res, next) => {
+    console.error('[error] Unhandled error:', err.message);
+    console.error('[error] Stack:', err.stack);
+    console.error('[error] Route:', req.method, req.path);
+    res.status(500).json({
+        error: err.message,
+        route: req.path
+    });
 });
-app.listen(config.port, () => { console.log(`Shipscribe REST API running at http://localhost:${config.port}`); });
+// --- Start the server locally ---
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    const server = app.listen(Number(config.port), '0.0.0.0', () => {
+        console.log(`[startup] Shipscribe REST API running at http://localhost:${config.port}`);
+    });
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.error(`[API] ❌ Port ${config.port} is already in use. Is another instance running?`);
+        }
+        else {
+            console.error(`[API] ❌ Server error: ${err.message}`);
+        }
+    });
+}
+// Export for Vercel Serverless environment
+export default (req, res) => {
+    return app(req, res);
+};

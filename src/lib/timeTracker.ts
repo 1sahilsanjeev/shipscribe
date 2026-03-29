@@ -13,6 +13,7 @@ const SESSION_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 const activeSessions = new Map<string, ActiveSession>();
 
 export function heartbeat(userId: string, project: string, source: string, file?: string) {
+  if (!supabaseAdmin) return;
   const key = `${userId}:${project}`;
   let session = activeSessions.get(key);
   const now = Date.now();
@@ -86,7 +87,7 @@ export async function getTimeToday(userId: string) {
     const summary: Record<string, { mins: number, sessions: number }> = {};
     let totalMins = 0;
     
-    sessions.forEach(s => {
+    sessions.forEach((s: any) => {
       if (!summary[s.project]) summary[s.project] = { mins: 0, sessions: 0 };
       summary[s.project].mins += s.duration_mins || 0;
       summary[s.project].sessions += 1;
@@ -107,8 +108,8 @@ export async function getTimeToday(userId: string) {
       .eq('user_id', userId)
       .gte('timestamp', `${today}T00:00:00Z`);
     
-    const hours = (activities || []).map(a => new Date(a.timestamp).getHours());
-    const counts = hours.reduce((acc: any, h) => { acc[h] = (acc[h] || 0) + 1; return acc; }, {});
+    const hours = (activities || []).map((a: any) => new Date(a.timestamp).getHours());
+    const counts = hours.reduce((acc: any, h: any) => { acc[h] = (acc[h] || 0) + 1; return acc; }, {});
     let maxHour = 0;
     let maxCount = 0;
     Object.entries(counts).forEach(([h, c]) => {
@@ -146,10 +147,10 @@ export async function getTimeWeek(userId: string) {
     if (error) throw error;
 
     return {
-      total_hours: parseFloat((sessions.reduce((acc, s) => acc + (s.duration_mins || 0), 0) / 60).toFixed(1)),
-      sessions_count: sessions.length
+      total_hours: parseFloat(((sessions || []).reduce((acc: number, s: any) => acc + (s.duration_mins || 0), 0) / 60).toFixed(1)),
+      sessions_count: (sessions || []).length
     };
-  } catch (error) {
+  } catch (error: any) {
     return { total_hours: 0, sessions_count: 0 };
   }
 }

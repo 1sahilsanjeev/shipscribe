@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { ServerStatusProvider } from './context/ServerStatusContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 import AdminRoute from './components/AdminRoute';
@@ -25,7 +26,8 @@ import AuthCallback from './pages/auth/Callback';
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ServerStatusProvider>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Toaster 
           position="bottom-right" 
           toastOptions={{ 
@@ -73,7 +75,8 @@ const App: React.FC = () => {
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Router>
+        </Router>
+      </ServerStatusProvider>
     </AuthProvider>
   );
 };

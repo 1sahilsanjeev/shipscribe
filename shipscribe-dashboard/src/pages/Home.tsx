@@ -9,18 +9,20 @@ import { Task } from '../types';
 import { CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
+import { useServerStatus } from '../context/ServerStatusContext';
 
 const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     today_activities: 0,
     tasks_completed_today: 0,
-    current_streak: 5, // Streak logic could be added to Supabase later
+    current_streak: 5,
     total_tasks_todo: 0,
     today_commits: 0,
     active_projects: 0
   });
   const [tasks, setTasks] = useState<Task[]>([]);
+  const { serverOnline } = useServerStatus();
 
   const fetchData = useCallback(async () => {
     try {
@@ -29,29 +31,36 @@ const Home: React.FC = () => {
 
       const today = new Date().toISOString().split('T')[0];
 
-      // Use Supabase for data fetching
-      const [statsRes, actRes, tasksRes] = await Promise.all([
-        api.get('/api/stats'), // Keep some custom stats in REST API for now
+      // Supabase queries always work; api.get only when server is online
+      const supabasePromises = [
         supabase.from('activities').select('*').eq('user_id', user.id).gte('timestamp', `${today}T00:00:00Z`),
         supabase.from('tasks').select('*').eq('user_id', user.id).eq('status', 'todo').order('created_at', { ascending: false })
-      ]);
+      ];
 
-      const githubCount = actRes.data?.filter((a: any) => a.source === 'github').length || 0;
-      const projects = new Set(actRes.data?.map((a: any) => a.project) || []);
-
-      setStats({
-        ...statsRes.data,
-        today_commits: githubCount,
-        active_projects: projects.size
-      });
-      setTasks((tasksRes.data || []) as any);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      // toast.error('Could not connect to API server');
+      if (serverOnline) {
+        const [statsRes, actRes, tasksRes] = await Promise.all([
+          api.get('/api/stats'),
+          ...supabasePromises
+        ]);
+        const githubCount = actRes.data?.filter((a: any) => a.source === 'github').length || 0;
+        const projects = new Set(actRes.data?.map((a: any) => a.project) || []);
+        setStats({ ...statsRes.data, today_commits: githubCount, active_projects: projects.size });
+        setTasks((tasksRes.data || []) as any);
+      } else {
+        const [actRes, tasksRes] = await Promise.all(supabasePromises);
+        const githubCount = actRes.data?.filter((a: any) => a.source === 'github').length || 0;
+        const projects = new Set(actRes.data?.map((a: any) => a.project) || []);
+        setStats(prev => ({ ...prev, today_commits: githubCount, active_projects: projects.size }));
+        setTasks((tasksRes.data || []) as any);
+      }
+    } catch (error: any) {
+      if (error.code !== 'ERR_NETWORK') {
+        console.error('Error fetching dashboard data:', error.message);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [serverOnline]);
 
   useEffect(() => {
     fetchData();

@@ -6,7 +6,7 @@ import { supabaseAdmin } from '../lib/supabase.js';
  * stored in the profile, not a JWT session.
  */
 export async function getUserIdByApiKey(apiKey: string): Promise<string | null> {
-  if (!apiKey) return null;
+  if (!apiKey || !supabaseAdmin) return null;
   const { data, error } = await supabaseAdmin
     .from('profiles')
     .select('id')
@@ -17,6 +17,7 @@ export async function getUserIdByApiKey(apiKey: string): Promise<string | null> 
 }
 
 export async function getTasks(userId: string, status?: string) {
+  if (!supabaseAdmin) return [];
   try {
     let query = supabaseAdmin
       .from('tasks')
@@ -44,6 +45,7 @@ export async function createTask(
   priority: string = 'medium',
   status: string = 'todo'
 ) {
+  if (!supabaseAdmin) return { error: 'Database not initialized' };
   try {
     const { data, error } = await supabaseAdmin
       .from('tasks')
@@ -66,6 +68,7 @@ export async function createTask(
 }
 
 export async function updateTaskStatus(userId: string, taskId: string, status: string) {
+  if (!supabaseAdmin) return { error: 'Database not initialized' };
   try {
     const { data, error } = await supabaseAdmin
       .from('tasks')
@@ -87,6 +90,7 @@ export async function updateTaskStatus(userId: string, taskId: string, status: s
 }
 
 export async function deleteTask(userId: string, taskId: string) {
+  if (!supabaseAdmin) return { error: 'Database not initialized' };
   try {
     const { error } = await supabaseAdmin
       .from('tasks')

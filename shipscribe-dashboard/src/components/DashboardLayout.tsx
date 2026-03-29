@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import ServerOfflineBanner from './ServerOfflineBanner';
 
 const DashboardLayout: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -13,6 +14,7 @@ const DashboardLayout: React.FC = () => {
       className="flex h-screen overflow-hidden bg-paper text-ink"
       style={{ '--sidebar-width': sidebarWidth } as React.CSSProperties}
     >
+      <ServerOfflineBanner />
       <Sidebar isCollapsed={isCollapsed} onToggle={() => setIsCollapsed(!isCollapsed)} />
       <div className={`flex-1 flex flex-col transition-all duration-300 ${isCollapsed ? 'ml-[64px]' : 'ml-[200px]'} h-full min-h-0 overflow-hidden`}>
         <main className={`flex-1 flex flex-col min-h-0 ${isChat ? 'p-0' : 'p-6 pb-12 overflow-y-auto'}`}>
@@ -26,3 +28,4 @@ const DashboardLayout: React.FC = () => {
 };
 
 export default DashboardLayout;
+

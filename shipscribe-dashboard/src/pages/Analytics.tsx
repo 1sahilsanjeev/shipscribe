@@ -75,8 +75,8 @@ const Analytics: React.FC = () => {
     return <AnalyticsSkeleton />;
   }
 
-  // Only show empty state if fetch failed entirely
-  if (!loading && !data) {
+  // Show empty state if fetch failed or there is zero recorded activity
+  if (!loading && (!data || data.streak?.total_active_days === 0)) {
     return <EmptyState />;
   }
 
@@ -155,7 +155,7 @@ const Analytics: React.FC = () => {
             <Calendar size={18} className="text-primary" />
             <h2 className="text-sm font-mono font-bold text-ink-muted uppercase tracking-widest">Activity Heatmap</h2>
           </div>
-          <div className="overflow-x-auto pb-2 scrollbar-hide">
+          <div className="pb-2">
             <ActivityHeatmap data={heatmap} />
           </div>
         </div>

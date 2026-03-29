@@ -109,6 +109,7 @@ Instructions:
 - When writing posts or summaries, be specific about what was built
 - When asked about tasks, reference the real data above
 - Format responses with markdown when helpful
+- Use emojis and symbols to make the chat feel livelier and more visual
 - Keep responses focused and actionable
 - Never make up data — only reference what's in the context above`;
         const response = await anthropic.messages.create({
