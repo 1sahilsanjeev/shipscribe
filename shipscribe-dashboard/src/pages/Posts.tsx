@@ -34,15 +34,16 @@ export default function Posts() {
     
     // Fetch personas and current active
     api.get('/voice').then(res => {
-      setPersonas(res.data || [])
-      const active = res.data?.find((p: any) => p.is_active)
-      setSelectedVoice(active?.id || null)
+      const data = Array.isArray(res.data) ? res.data : [];
+      setPersonas(data);
+      const active = data.find((p: any) => p.is_active);
+      setSelectedVoice(active?.id || null);
 
       // Auto-generate if we have context
       if (autoContext) {
-        generatePosts(autoContext.summaryText, autoContext.stats, autoContext.summaryId, active?.id)
+        generatePosts(autoContext.summaryText, autoContext.stats, autoContext.summaryId, active?.id);
       }
-    })
+    });
 
     fetchSavedPosts()
   }, [])
@@ -72,7 +73,7 @@ export default function Posts() {
         summaryId,
         voicePersonaId
       })
-      setVariants(res.data.variants)
+      setVariants(Array.isArray(res.data?.variants) ? res.data.variants : [])
       setLastUsedContext({
         voice: res.data.voice_used,
         project: res.data.project_used
@@ -87,7 +88,7 @@ export default function Posts() {
   async function fetchSavedPosts() {
     try {
       const res = await api.get('/posts')
-      setSavedPosts(res.data)
+      setSavedPosts(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
       console.error('Failed to fetch posts:', err)
     } finally {

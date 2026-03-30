@@ -42,16 +42,18 @@ const Home: React.FC = () => {
           api.get('/api/stats'),
           ...supabasePromises
         ]);
-        const githubCount = actRes.data?.filter((a: any) => a.source === 'github').length || 0;
-        const projects = new Set(actRes.data?.map((a: any) => a.project) || []);
+        const activities = Array.isArray(actRes.data) ? actRes.data : [];
+        const githubCount = activities.filter((a: any) => a.source === 'github').length || 0;
+        const projects = new Set(activities.map((a: any) => a.project) || []);
         setStats({ ...statsRes.data, today_commits: githubCount, active_projects: projects.size });
-        setTasks((tasksRes.data || []) as any);
+        setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
       } else {
         const [actRes, tasksRes] = await Promise.all(supabasePromises);
-        const githubCount = actRes.data?.filter((a: any) => a.source === 'github').length || 0;
-        const projects = new Set(actRes.data?.map((a: any) => a.project) || []);
+        const activities = Array.isArray(actRes.data) ? actRes.data : [];
+        const githubCount = activities.filter((a: any) => a.source === 'github').length || 0;
+        const projects = new Set(activities.map((a: any) => a.project) || []);
         setStats(prev => ({ ...prev, today_commits: githubCount, active_projects: projects.size }));
-        setTasks((tasksRes.data || []) as any);
+        setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
       }
     } catch (error: any) {
       if (error.code !== 'ERR_NETWORK') {

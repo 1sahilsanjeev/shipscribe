@@ -46,7 +46,12 @@ export const useMCPStatus = () => {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       failCountRef.current = 0;
-      setStatus(res.data);
+      const data = res.data;
+      setStatus({
+        connected: data?.connected ?? false,
+        connections: Array.isArray(data?.connections) ? data.connections : [],
+        primary: data?.primary ?? null
+      });
     } catch (error: any) {
       // Don't log connection refused — ServerOfflineBanner handles it
       if (error.code !== 'ERR_NETWORK') {

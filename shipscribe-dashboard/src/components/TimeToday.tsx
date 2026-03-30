@@ -25,10 +25,11 @@ const TimeToday: React.FC = () => {
     try {
       const response = await api.get('/api/activity/live');
       failCountRef.current = 0;
-      const chartData = response.data.time_today.by_project.map((p: any) => ({
+      const rawData = response.data?.time_today?.by_project;
+      const chartData = Array.isArray(rawData) ? rawData.map((p: any) => ({
         name: p.project,
         hours: p.hours,
-      }));
+      })) : [];
       setData(chartData);
     } catch (error: any) {
       if (error.code !== 'ERR_NETWORK') {

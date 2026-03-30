@@ -45,9 +45,14 @@ export default function Chat() {
 
   useEffect(() => {
     // Fetch active context
-    api.get('/voice/active').then(res => setActiveVoice(res.data)).catch(() => {})
-    api.get('/projects/primary').then(res => setPrimaryProject(res.data)).catch(() => {})
-    api.get('/projects').then(res => setProjects(res.data || [])).catch(() => {})
+    api.get('/voice/active').then(res => setActiveVoice(res.data?.id ? res.data : null)).catch(() => {})
+    api.get('/projects/primary').then(res => setPrimaryProject(res.data?.id ? res.data : null)).catch(() => {})
+    api.get('/projects').then(res => {
+      const data = Array.isArray(res.data) ? res.data : []
+      setProjects(data)
+    }).catch(() => {
+      setProjects([])
+    })
   }, [])
 
   useEffect(() => {
@@ -226,9 +231,9 @@ export default function Chat() {
             onChange={e => setSelectedProjectId(e.target.value)}
           >
             <option value="">All Projects</option>
-            {projects.map(p => (
+            {Array.isArray(projects) && projects.map(p => (
               <option key={p.id} value={p.id}>
-                {p.emoji} {p.name}
+                {p.emoji || '📁'} {p.name}
               </option>
             ))}
           </select>
@@ -312,7 +317,7 @@ export default function Chat() {
           ) : (
             /* Messages */
             <div className="space-y-10">
-              {messages.map((message) => (
+              {(Array.isArray(messages) ? messages : []).map((message) => (
                 <div
                   key={message.id}
                   className={`flex flex-col group ${

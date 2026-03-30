@@ -77,7 +77,7 @@ const ActivityPage: React.FC = () => {
         });
         if (!res.ok) throw new Error('API fetch failed');
         const data = await res.json();
-        setActivities(data || []);
+        setActivities(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error("Failed to fetch activities", e);
       } finally {

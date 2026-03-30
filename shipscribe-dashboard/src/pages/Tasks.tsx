@@ -212,7 +212,7 @@ const Tasks: React.FC = () => {
     setLoading(true);
     try {
       const res = await api.get('/tasks');
-      setTasks(res.data || []);
+      setTasks(Array.isArray(res.data) ? res.data : []);
     } catch {
       toast.error('Failed to load tasks');
     } finally {

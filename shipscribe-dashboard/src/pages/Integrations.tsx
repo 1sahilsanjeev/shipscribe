@@ -282,7 +282,7 @@ const Integrations: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {(['antigravity', 'cursor', 'claude_code'] as const).map((id) => {
-            const connection = connections?.find((c: any) => c.editor === id) || null;
+            const connection = (Array.isArray(connections) ? connections.find((c: any) => c.editor === id) : null) || null;
             return (
               <EditorCard 
                 key={id}

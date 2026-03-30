@@ -29,17 +29,32 @@ const Onboarding: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 10;
+    const delay = 1000;
+
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('api_key')
-          .eq('id', user.id)
-          .single();
-        if (profile) setApiKey(profile.api_key);
+      if (!user) return;
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('api_key')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        setApiKey(profile.api_key);
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+        console.log(`[onboarding] Profile not found, retrying... (${retryCount}/${maxRetries})`);
+        setTimeout(fetchProfile, delay);
+      } else {
+        console.error('[onboarding] Failed to fetch profile after retries');
+        toast.error("We're having trouble finding your profile. Please refresh.");
       }
     };
+    
     fetchProfile();
   }, []);
 

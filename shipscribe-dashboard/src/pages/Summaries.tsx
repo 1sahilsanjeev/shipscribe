@@ -58,7 +58,7 @@ export default function Summaries() {
     setLoading(true)
     try {
       const res = await api.get('/api/summaries')
-      setSummaries(res.data)
+      setSummaries(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
       console.error(err)
     } finally {
