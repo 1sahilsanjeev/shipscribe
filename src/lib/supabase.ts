@@ -11,7 +11,11 @@ export function getSupabase(): SupabaseClient {
   const supabaseAnonKey = config.supabaseAnonKey || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('[supabase] ✗ Missing SUPABASE_URL or ANON_KEY');
+    const missing = [];
+    if (!supabaseUrl) missing.push('SUPABASE_URL');
+    if (!supabaseAnonKey) missing.push('SUPABASE_ANON_KEY');
+    console.error(`[supabase] ✗ Initialization failed. Missing: ${missing.join(', ')}`);
+    throw new Error(`[supabase] ✗ Missing ${missing.join(' or ')}`);
   }
 
   _supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -29,8 +33,16 @@ export function getSupabaseAdmin(): SupabaseClient {
   const supabaseServiceKey = config.supabaseServiceKey || process.env.SUPABASE_SERVICE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('[supabase] ✗ Missing SUPABASE_URL or SERVICE_KEY');
+    const missing = [];
+    if (!supabaseUrl) missing.push('SUPABASE_URL');
+    if (!supabaseServiceKey) missing.push('SUPABASE_SERVICE_KEY');
+    
+    const context = process.env.VERCEL ? 'Vercel Dashboard' : '.env file';
+    const msg = `[supabase] ✗ Missing ${missing.join(' or ')}. Please check your ${context}.`;
+    console.error(`[supabase] ✗ Admin initialization failed. ${msg}`);
+    throw new Error(msg);
   }
+
 
   _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false }
@@ -39,6 +51,7 @@ export function getSupabaseAdmin(): SupabaseClient {
   console.log('[supabase] ✓ Admin client initialized');
   return _supabaseAdmin;
 }
+
 
 /**
  * STABLE LAZY EXPORTS: 

@@ -79,19 +79,41 @@ app.use((req: any, res: any, next: any) => {
 // --- Routes ---
 
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
+  const diagnostics = {
+    supabase_url: process.env.SUPABASE_URL ? 'PRESENT' : (process.env.VITE_SUPABASE_URL ? 'PRESENT (VITE_ FALLBACK)' : 'MISSING'),
+    supabase_service_key: process.env.SUPABASE_SERVICE_KEY ? 'PRESENT' : 'MISSING',
+    supabase_anon_key: process.env.SUPABASE_ANON_KEY ? 'PRESENT' : (process.env.VITE_SUPABASE_ANON_KEY ? 'PRESENT (VITE_ FALLBACK)' : 'MISSING'),
+    anthropic_key: process.env.ANTHROPIC_API_KEY ? 'PRESENT' : 'MISSING',
+    jwt_secret: process.env.JWT_SECRET ? 'PRESENT' : 'MISSING'
+  };
+
+  const isHealthy = diagnostics.supabase_url !== 'MISSING' && diagnostics.supabase_service_key !== 'MISSING';
+
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
     source: 'express_app',
-    env_diagnostics: {
-      supabase_url: process.env.SUPABASE_URL ? 'PRESENT' : 'MISSING',
-      supabase_service_key: process.env.SUPABASE_SERVICE_KEY ? 'PRESENT' : 'MISSING',
-      supabase_anon_key: process.env.SUPABASE_ANON_KEY ? 'PRESENT' : 'MISSING',
-      anthropic_key: process.env.ANTHROPIC_API_KEY ? 'PRESENT' : 'MISSING',
-      jwt_secret: process.env.JWT_SECRET ? 'PRESENT' : 'MISSING'
-    }
+    env_diagnostics: diagnostics
   });
 });
+
+app.get('/api/debug/env', (req, res) => {
+  // Simple check to prevent public exposure in real production, but helpful for debugging now
+  const apiKey = req.headers['x-api-key'];
+  if (process.env.NODE_ENV === 'production' && apiKey !== process.env.SHIPSCRIBE_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  res.json({
+    node_env: process.env.NODE_ENV,
+    vercel: process.env.VERCEL || 'not set',
+    port: process.env.PORT,
+    keys_found: Object.keys(process.env).filter(k => 
+      k.includes('SUPABASE') || k.includes('API') || k.includes('KEY') || k.includes('URL')
+    ).map(k => ({ [k]: process.env[k] ? 'EXISTS' : 'EMPTY' }))
+  });
+});
+
 
 import { handle } from '../lib/routeHandler.js';
 
@@ -106,11 +128,16 @@ app.get('/api/auth/validate-key', handle(async (req, res) => {
     return;
   }
 
-  if (!supabaseAdmin) {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
     console.error('[API] Validate-key failed: Supabase admin client not initialized');
-    res.status(503).json({ error: 'Authentication service unavailable (Supabase keys missing)' });
+    const location = process.env.VERCEL ? 'Vercel Dashboard' : 'local .env file';
+    res.status(503).json({ 
+      error: `Authentication service unavailable. Missing Supabase configuration in ${location}.`,
+      suggestion: 'Ensure SUPABASE_URL and SUPABASE_SERVICE_KEY are set correctly.'
+    });
     return;
   }
+
 
   const { data: profile, error } = await supabaseAdmin
     .from('profiles')

@@ -235,18 +235,24 @@ async function main() {
   }
 
   if (!apiReady) {
-    console.error(`\nCRITICAL ERROR: Shipscribe API is unreachable.`);
-    console.error(`[shipscribe] HOW TO FIX:\n1. Open a new terminal\n2. Run: pnpm dev:all\n`);
+    console.error(`\n[shipscribe] ✗ CRITICAL ERROR: Shipscribe API is unreachable.`);
+    console.error(`[shipscribe] HOW TO FIX (Local Dev):`);
+    console.error(`1. Check if the local API is running in another terminal: 'npm run api:dev'`);
+    console.error(`2. Ensure http://localhost:3005/api/health is accessible.`);
+    console.error(`\n[shipscribe] HOW TO FIX (Production):`);
+    console.error(`1. Check the status at https://www.shipscribe.pro/api/health`);
+    console.error(`2. If health is 'degraded', add SUPABASE_URL and SUPABASE_SERVICE_KEY to Vercel.`);
     process.exit(1);
   }
 
   // Validate API Key via REST API
-  console.error(`[shipscribe] Validating API key...`);
+  const isProduction = apiUrl.includes('shipscribe.pro');
+  console.error(`[shipscribe] Validating API key against ${isProduction ? 'PRODUCTION' : 'LOCAL'} API...`);
   
   try {
     const response = await fetch(`${apiUrl}/auth/validate-key`, {
       headers: { 'x-api-key': apiKey },
-      signal: AbortSignal.timeout(3000) // 3s timeout
+      signal: AbortSignal.timeout(5000) // 5s timeout
     });
 
     const contentType = response.headers.get('content-type');
@@ -254,7 +260,7 @@ async function main() {
 
     if (response.ok && isJson) {
       const profile = await response.json();
-      console.error(`[shipscribe] API key validated for user: ${profile.email}`);
+      console.error(`[shipscribe] ✓ API key validated for: ${profile.email}`);
       validatedUser = profile;
     } else {
       let errorData: any = { error: 'Unknown API error', status: response.status };
@@ -262,18 +268,42 @@ async function main() {
         errorData = await response.json().catch(() => errorData);
       } else {
         const text = await response.text().catch(() => '');
-        errorData.error = `Unexpected response format (expected JSON, got ${contentType}). Body: ${text.slice(0, 100)}`;
+        errorData.error = `Unexpected response format (${contentType}). Body: ${text.slice(0, 100)}`;
       }
       
       console.error(`[shipscribe] API Validation Error: ${errorData.error}`);
-      throw errorData; // Trigger the catch block below
+      
+      // Provide diagnostic hints based on the specific error
+      if (errorData.error.includes('[supabase]') || response.status === 503) {
+        const location = isProduction ? 'Vercel Dashboard' : 'local .env file';
+        console.error(`\n[shipscribe] DIAGNOSTIC: The API at ${apiUrl} is missing Supabase keys.`);
+        console.error(`ACTION: Please ensure SUPABASE_URL and SUPABASE_SERVICE_KEY are set in the ${location}.`);
+      }
+
+      throw errorData;
     }
   } catch (err: any) {
-    // If it's already a structured error from above, we use it
     const errorMsg = err.error || err.message || 'Unknown error';
-    console.error(`[shipscribe] CRITICAL ERROR: API validation failed (${errorMsg}).`);
+    console.error(`\n[shipscribe] CRITICAL ERROR: API validation failed (${errorMsg}).`);
+    
+    if (isProduction) {
+      console.error(`\n[shipscribe] PRODUCTION TROUBLESHOOTING:`);
+      console.error(`1. GOAL: Fix the API configuration on Vercel.`);
+      console.error(`2. CHECK: Go to Vercel Dashboard > Settings > Environment Variables.`);
+      console.error(`3. ADD: SUPABASE_URL and SUPABASE_SERVICE_KEY (from your Supabase project).`);
+      console.error(`4. REDEPLOY: The API must be redeployed for changes to take effect.`);
+      console.error(`\n5. ALTERNATIVE: Use the local backend. In Claude Desktop config:`);
+      console.error(`   Change SHIPSCRIBE_API_URL to: http://127.0.0.1:3005/api`);
+    } else {
+      console.error(`\n[shipscribe] LOCAL DEV TROUBLESHOOTING:`);
+      console.error(`1. run 'npm run api:dev' to start the local backend.`);
+      console.error(`2. Check 'd:/shipscribe/.env' for correct Supabase and Anthropic keys.`);
+    }
+
     process.exit(1);
   }
+
+
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

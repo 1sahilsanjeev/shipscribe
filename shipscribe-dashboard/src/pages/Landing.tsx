@@ -90,7 +90,7 @@ const Landing: React.FC = () => {
               playsInline 
               className="w-full h-full object-cover"
             >
-              <source src="/hero-bg-2.mp4" type="video/mp4" />
+              <source src="/shipscribe-dashboard/hero-bg-2.mp4" type="video/mp4" />
             </video>
           </div>
           <div className="absolute inset-0 z-0 pointer-events-none bg-black/20 mix-blend-multiply"></div>
@@ -572,7 +572,7 @@ const Landing: React.FC = () => {
               playsInline 
               className="w-full h-full object-cover opacity-60"
             >
-              <source src="/waitlist-bg.mp4" type="video/mp4" />
+              <source src="/shipscribe-dashboard/waitlist-bg.mp4" type="video/mp4" />
             </video>
           </div>
           <div className="absolute inset-0 z-0 bg-gradient-to-t from-black via-transparent to-black pointer-events-none"></div>

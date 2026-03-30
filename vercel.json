@@ -20,8 +20,12 @@
   "rewrites": [
     { "source": "/api/health", "destination": "/api/health.ts" },
     { "source": "/api/(.*)", "destination": "/api/index.ts" },
+    { "source": "/shipscribe-dashboard/(.*)", "destination": "/shipscribe-dashboard/$1" },
     { "source": "/assets/(.*)", "destination": "/shipscribe-dashboard/assets/$1" },
+    { "source": "/(hero-bg-2.mp4|waitlist-bg.mp4|hero-bg.mp4|login-bg-new.mp4|login-bg.mp4)", "destination": "/shipscribe-dashboard/$1" },
+    { "source": "/(favicon.svg|activity-pulse.png|global-ledger.png|neural-brain.png|version.txt)", "destination": "/shipscribe-dashboard/$1" },
+    { "source": "/testimonials/(.*)", "destination": "/shipscribe-dashboard/testimonials/$1" },
     { "source": "/", "destination": "/shipscribe-dashboard/index.html" },
-    { "source": "/((?!api/|assets/).*)", "destination": "/shipscribe-dashboard/index.html" }
+    { "source": "/((?!api/|assets/|shipscribe-dashboard/|.*\\.[a-zA-Z0-9]+$).*)", "destination": "/shipscribe-dashboard/index.html" }
   ]
 }

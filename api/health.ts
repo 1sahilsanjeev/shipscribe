@@ -1,6 +1,8 @@
 export default function handler(req: any, res: any) {
-  res.status(200).json({ 
-    status: 'ok', 
+  const isHealthy = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+  
+  res.status(isHealthy ? 200 : 503).json({ 
+    status: isHealthy ? 'ok' : 'degraded', 
     source: 'api_folder_ts_nuclear',
     timestamp: new Date().toISOString(),
     diagnostics: {
