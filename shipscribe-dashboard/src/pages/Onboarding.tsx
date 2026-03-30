@@ -37,7 +37,7 @@ const Onboarding: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile, error } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('api_key')
         .eq('id', user.id)
